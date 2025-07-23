@@ -8,3 +8,5 @@ project(MultithreadWebServer)
 file(GLOB CPP_SOURCES "Source/*.cc")
 
 add_executable(${PROJECT_NAME} ${CPP_SOURCES})
+
+target_include_directories(${PROJECT_NAME} PRIVATE Source/Socket)
