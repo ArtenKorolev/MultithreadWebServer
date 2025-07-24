@@ -29,9 +29,10 @@ class UnixSocket : public ISocket {
   explicit UnixSocket(int fileDescriptor);
 
   [[nodiscard]] bool _isValidSocket() const noexcept;
-  static struct addrinfo *_resolveHostDataToAddressInfo(
+  [[nodiscard]] static struct addrinfo *_resolveHostDataToAddressInfo(
       const HostData &hostData);
-  static struct sockaddr_in _buildLocalAddressByPort(std::uint16_t port);
+  [[nodiscard]] static struct sockaddr_in _buildLocalAddressByPort(
+      std::uint16_t port);
 
   int _socketFd{};
 };
