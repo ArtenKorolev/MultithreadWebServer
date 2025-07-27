@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(MultithreadWebServer)
 
-file(GLOB CPP_SOURCES "Source/*.cc" "Source/Socket/*.cc")
+file(GLOB CPP_SOURCES "Source/*.cc" "Source/Socket/*.cc" "Source/Server/*.cc")
 
 add_executable(${PROJECT_NAME} ${CPP_SOURCES})
 
-target_include_directories(${PROJECT_NAME} PRIVATE Source/Socket)
+target_include_directories(${PROJECT_NAME} PRIVATE Source/Socket Source/Server)
