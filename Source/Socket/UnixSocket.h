@@ -11,12 +11,11 @@ namespace webserver::net {
 class UnixSocket : public ISocket {
  public:
   UnixSocket();
-
-  ~UnixSocket() noexcept override;
   UnixSocket(const UnixSocket &) = delete;
   UnixSocket(UnixSocket &&) = delete;
   UnixSocket &operator=(const UnixSocket &) = delete;
   UnixSocket &operator=(UnixSocket &&) = delete;
+  ~UnixSocket() noexcept override;
 
   void connect(const HostData &hostData) override;
   void bind(std::uint16_t port) override;

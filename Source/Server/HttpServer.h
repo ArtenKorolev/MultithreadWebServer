@@ -10,11 +10,17 @@ constexpr auto kDefaultPort = 8000;
 
 class HttpServer {
  public:
-  explicit HttpServer(std::uint16_t port = kDefaultPort) : _port(port) {
+  explicit HttpServer(std::uint16_t port = kDefaultPort) : _port{port} {
     _throwIfPortIsInvalid();
     _serverSocket = SocketFactory::newSocket();
     _serverSocket->bind(port);
   }
+
+  HttpServer(const HttpServer &) = delete;
+  HttpServer(HttpServer &&) = delete;
+  HttpServer &operator=(const HttpServer &) = delete;
+  HttpServer &operator=(HttpServer &&) = delete;
+  ~HttpServer() = default;
 
  private:
   void _throwIfPortIsInvalid() const;
