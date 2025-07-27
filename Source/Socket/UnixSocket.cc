@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <cstddef>
+#include <array>
 #include <cstring>
 #include <memory>
 #include <stdexcept>
@@ -18,13 +18,13 @@ constexpr auto BUFFER_SIZE = 1024;
 
 namespace webserver::net {
 
-UnixSocket::UnixSocket() : _socketFd(::socket(AF_INET, SOCK_STREAM, 0)) {
+UnixSocket::UnixSocket() : _socketFd{::socket(AF_INET, SOCK_STREAM, 0)} {
   if (!_isValidSocket()) {
     throw std::runtime_error("Unable to initialize socket");
   }
 }
 
-UnixSocket::UnixSocket(int fileDescriptor) : _socketFd(fileDescriptor) {
+UnixSocket::UnixSocket(int fileDescriptor) : _socketFd{fileDescriptor} {
   if (!_isValidSocket()) {
     throw std::runtime_error("Invalid file descriptor");
   }
@@ -124,7 +124,7 @@ void UnixSocket::send(const std::string &data) {
 
 std::string UnixSocket::receive() {
   std::string received;
-  std::string buffer(BUFFER_SIZE, 0);
+  std::array<char, BUFFER_SIZE> buffer{};
 
   ssize_t bytesReceived{0};
   while ((bytesReceived = ::recv(_socketFd, buffer.data(), buffer.size(), 0)) >
