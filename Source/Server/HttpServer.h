@@ -22,7 +22,10 @@ class HttpServer {
   HttpServer &operator=(HttpServer &&) = delete;
   ~HttpServer() = default;
 
+  void startServerLoop() const;
+
  private:
+  static void _serveClient(std::unique_ptr<ISocket> clientSocket);
   void _throwIfPortIsInvalid() const;
 
   std::uint16_t _port;
