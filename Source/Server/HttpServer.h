@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "SocketFactory.h"
+#include "ThreadPool.h"
 
 namespace webserver::net {
 
@@ -22,12 +23,13 @@ class HttpServer {
   HttpServer &operator=(HttpServer &&) = delete;
   ~HttpServer() = default;
 
-  void startServerLoop() const;
+  void startServerLoop();
 
  private:
   static void _serveClient(std::unique_ptr<ISocket> clientSocket);
   void _throwIfPortIsInvalid() const;
 
+  core::ThreadPool _threadPool;
   std::uint16_t _port;
   std::unique_ptr<ISocket> _serverSocket;
 };

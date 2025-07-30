@@ -1,7 +1,6 @@
 #include "HttpServer.h"
 
 #include <stdexcept>
-#include <thread>
 
 namespace webserver::net {
 
@@ -14,20 +13,21 @@ void HttpServer::_throwIfPortIsInvalid() const {
   }
 }
 
-void HttpServer::startServerLoop() const {
+void HttpServer::startServerLoop() {
   _serverSocket->listen();
 
   while (true) {
     auto clientSocket{_serverSocket->accept()};
-    std::thread clientThread([client = std::move(clientSocket)]() mutable {
-      HttpServer::_serveClient(std::move(client));
+
+    _threadPool.enqueue([client = std::move(clientSocket)]() mutable {
+      _serveClient(std::move(client));
     });
-    clientThread.detach();
   }
 }
 
 void HttpServer::_serveClient(std::unique_ptr<ISocket> clientSocket) {
-  auto request = clientSocket->receive();
+  auto request = clientSocket->receive();  // NOLINT
+
   clientSocket->send(
       "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello, World!");
 }
