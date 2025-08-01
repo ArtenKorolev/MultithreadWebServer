@@ -1,14 +1,13 @@
 #pragma once
 
 #include <netdb.h>
-#include <sys/socket.h>
 
 #include "HostData.h"
 #include "Socket.h"
 
 namespace webserver::net {
 
-class UnixSocket : public ISocket {
+class UnixSocket final : public ISocket {
  public:
   UnixSocket();
   UnixSocket(const UnixSocket &) = delete;
@@ -27,7 +26,8 @@ class UnixSocket : public ISocket {
  private:
   explicit UnixSocket(int fileDescriptor);
 
-  [[nodiscard]] bool _isValidSocket() const noexcept;
+  [[nodiscard]] static bool _isValidFileDescriptor(
+      int fileDescriptor) noexcept;
   [[nodiscard]] static struct addrinfo *_resolveHostDataToAddressInfo(
       const HostData &hostData);
   [[nodiscard]] static struct sockaddr_in _buildLocalAddressByPort(

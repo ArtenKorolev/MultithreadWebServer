@@ -13,7 +13,7 @@
 namespace webserver::core {
 
 inline std::size_t getDefaultThreadsCount() noexcept {
-  auto count = std::thread::hardware_concurrency();
+  const auto count = std::thread::hardware_concurrency();
   return count == 0 ? 4 : count;
 }
 

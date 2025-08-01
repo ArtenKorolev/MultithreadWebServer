@@ -4,7 +4,7 @@
 
 namespace webserver::core {
 
-ThreadPool::ThreadPool(std::size_t threadsCount) {
+ThreadPool::ThreadPool(const std::size_t threadsCount) {
   for (std::size_t i = 0; i < threadsCount; ++i) {
     _workers.emplace_back([this] { this->_worker(); });
   }

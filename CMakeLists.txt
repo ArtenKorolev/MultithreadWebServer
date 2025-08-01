@@ -7,10 +7,12 @@ project(MultithreadWebServer)
 
 file(GLOB CPP_SOURCES "Source/*.cc" "Source/Socket/*.cc" "Source/Server/*.cc" "Source/ThreadPool/*.cc")
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-endif()
-
 add_executable(${PROJECT_NAME} ${CPP_SOURCES})
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(${PROJECT_NAME} PRIVATE -g)
+elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_options(${PROJECT_NAME} PRIVATE -O3 -Wall)
+endif ()
 
 target_include_directories(${PROJECT_NAME} PRIVATE Source/Socket Source/Server Source/ThreadPool)

@@ -11,11 +11,7 @@ constexpr auto kDefaultPort = 8000;
 
 class HttpServer {
  public:
-  explicit HttpServer(std::uint16_t port = kDefaultPort) : _port{port} {
-    _throwIfPortIsInvalid();
-    _serverSocket = SocketFactory::newSocket();
-    _serverSocket->bind(port);
-  }
+  explicit HttpServer(std::uint16_t port = kDefaultPort);
 
   HttpServer(const HttpServer &) = delete;
   HttpServer(HttpServer &&) = delete;
@@ -23,10 +19,10 @@ class HttpServer {
   HttpServer &operator=(HttpServer &&) = delete;
   ~HttpServer() = default;
 
-  void startServerLoop();
+  [[noreturn]] void startServerLoop();
 
  private:
-  static void _serveClient(std::unique_ptr<ISocket> clientSocket);
+  static void _serveClient(const std::unique_ptr<ISocket> &clientSocket);
   void _throwIfPortIsInvalid() const;
 
   core::ThreadPool _threadPool;

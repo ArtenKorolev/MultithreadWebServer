@@ -14,28 +14,34 @@
 
 #include "HostData.h"
 
-constexpr auto BUFFER_SIZE = 1024;
-
 namespace webserver::net {
 
-UnixSocket::UnixSocket() : _socketFd{::socket(AF_INET, SOCK_STREAM, 0)} {
-  if (!_isValidSocket()) {
+constexpr auto kBufferSize = 1024;
+
+UnixSocket::UnixSocket() {
+  const auto fileDescriptor = ::socket(AF_INET, SOCK_STREAM, 0);
+
+  if (!_isValidFileDescriptor(fileDescriptor)) {
     throw std::runtime_error("Unable to initialize socket");
   }
+
+  _socketFd = fileDescriptor;
 }
 
-UnixSocket::UnixSocket(int fileDescriptor) : _socketFd{fileDescriptor} {
-  if (!_isValidSocket()) {
+UnixSocket::UnixSocket(const int fileDescriptor) {
+  if (!_isValidFileDescriptor(fileDescriptor)) {
     throw std::runtime_error("Invalid file descriptor");
   }
+
+  _socketFd = fileDescriptor;
 }
 
-bool UnixSocket::_isValidSocket() const noexcept {
-  return _socketFd > 0;
+bool UnixSocket::_isValidFileDescriptor(const int fileDescriptor) noexcept {
+  return fileDescriptor >= 0;
 }
 
 UnixSocket::~UnixSocket() noexcept {
-  if (_isValidSocket()) {
+  if (_isValidFileDescriptor(_socketFd)) {
     close(_socketFd);
   }
 }
@@ -43,7 +49,7 @@ UnixSocket::~UnixSocket() noexcept {
 void UnixSocket::connect(const HostData &hostData) {
   auto *addressInfo{_resolveHostDataToAddressInfo(hostData)};
 
-  auto connectResult{
+  const auto connectResult{
       ::connect(_socketFd, addressInfo->ai_addr, addressInfo->ai_addrlen)};
 
   freeaddrinfo(addressInfo);
@@ -63,10 +69,10 @@ struct addrinfo *UnixSocket::_resolveHostDataToAddressInfo(
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
 
-  std::string portAsString{std::to_string(hostData.port)};
+  const std::string portAsString{std::to_string(hostData.port)};
 
-  auto result{getaddrinfo(hostData.host.c_str(), portAsString.c_str(), &hints,
-                          &server)};
+  const auto result{getaddrinfo(hostData.host.c_str(), portAsString.c_str(),
+                                &hints, &server)};
 
   if (result != 0) {
     throw std::runtime_error("Unable to resolve this host and port: " +
@@ -76,10 +82,10 @@ struct addrinfo *UnixSocket::_resolveHostDataToAddressInfo(
   return server;
 }
 
-void UnixSocket::bind(std::uint16_t port) {
+void UnixSocket::bind(const std::uint16_t port) {
   auto address{_buildLocalAddressByPort(port)};
 
-  auto bindResult{::bind(
+  const auto bindResult{::bind(
       _socketFd, reinterpret_cast<struct sockaddr *>(&address),  // NOLINT
       sizeof(address))};
 
@@ -97,34 +103,32 @@ struct sockaddr_in UnixSocket::_buildLocalAddressByPort(std::uint16_t port) {
 }
 
 std::unique_ptr<ISocket> UnixSocket::accept() {
-  auto clientSocket{::accept(_socketFd, nullptr, nullptr)};
+  const auto clientFileDescriptor{::accept(_socketFd, nullptr, nullptr)};
 
-  if (clientSocket < 0) {
+  if (!_isValidFileDescriptor(clientFileDescriptor)) {
     throw std::runtime_error("Error while accepting socket");
   }
 
-  return std::unique_ptr<UnixSocket>(new UnixSocket(clientSocket));
+  return std::unique_ptr<UnixSocket>(new UnixSocket(clientFileDescriptor));
 }
 
 void UnixSocket::listen() {
-  auto listenResult{::listen(_socketFd, SOMAXCONN)};
-
-  if (listenResult < 0) {
+  if (const auto listenResult{::listen(_socketFd, SOMAXCONN)};
+      listenResult < 0) {
     throw std::runtime_error("Listen failed");
   }
 }
 
 void UnixSocket::send(const std::string &data) {
-  auto bytesSent{::send(_socketFd, data.data(), data.size(), 0)};
-
-  if (bytesSent != data.size()) {
+  if (const auto bytesSent{::send(_socketFd, data.data(), data.size(), 0)};
+      bytesSent != data.size()) {
     throw std::runtime_error("Bytes sent don't match data size");
   }
 }
 
 std::string UnixSocket::receive() {
   std::string received;
-  std::array<char, BUFFER_SIZE> buffer{};
+  std::array<char, kBufferSize> buffer{};
 
   ssize_t bytesReceived{0};
   while ((bytesReceived = ::recv(_socketFd, buffer.data(), buffer.size(), 0)) >
