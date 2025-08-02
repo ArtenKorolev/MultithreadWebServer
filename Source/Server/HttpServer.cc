@@ -2,10 +2,14 @@
 
 #include <stdexcept>
 
+#include "HttpResponse.h"
+
 namespace webserver::net {
 
 constexpr auto kMinPort = 1;
 constexpr auto kMaxPort = 65535;
+
+using namespace http;
 
 HttpServer::HttpServer(const std::uint16_t port) : _port{port} {
   _throwIfPortIsInvalid();
@@ -31,10 +35,15 @@ void HttpServer::startServerLoop() {
 }
 
 void HttpServer::_serveClient(const std::unique_ptr<ISocket> &clientSocket) {
-  auto request = clientSocket->receive();  // NOLINT
+  const auto request{clientSocket->receive()};  // NOLINT
 
-  clientSocket->send(
-      "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello, World!");
+  const HttpResponse response{.statusCode = StatusCode::HTTP_200_OK,
+                              .body = "Hello, World!",
+                              .headers = {{"Connection", "close"},
+                                          {"Server", "webserver"},
+                                          {"Content-Type", "text/plain"}}};
+
+  clientSocket->send(response.toString());
 }
 
 }  // namespace webserver::net
