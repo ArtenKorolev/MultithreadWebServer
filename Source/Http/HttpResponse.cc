@@ -14,7 +14,7 @@ std::string HttpResponse::toString() const {
 std::string HttpResponse::_generateStatusLine() const {
   return fmt::format("{} {} {}", httpVersion,
                      static_cast<std::uint16_t>(statusCode),
-                     generateStatusCodeMap()[statusCode]);
+                     getStatusCodeToReasonPhraseMap()[statusCode]);
 }
 
 std::string HttpResponse::_generateHeadersString() const {

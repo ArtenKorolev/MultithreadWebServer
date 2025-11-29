@@ -7,8 +7,8 @@
 namespace webserver::http {
 
 struct HttpRequest {
-  MethodType method;
-  HTTPVersion httpVersion;
+  HttpMethod method;
+  HttpVersion httpVersion;
   std::string uri;
   HeadersType headers;
   std::string body;

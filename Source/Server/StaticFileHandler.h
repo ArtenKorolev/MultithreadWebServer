@@ -1,5 +1,7 @@
 #pragma once
 
+#include <filesystem>
+
 #include "HttpRequest.h"
 #include "HttpResponse.h"
 
@@ -15,7 +17,7 @@ class StaticFileHandler {
  private:
   [[nodiscard]] static bool _containsTwoDotsPattern(const std::string& uri);
   [[nodiscard]] static std::string _getMimeTypeByFileName(
-      const std::string& fileName);
+      const std::filesystem::path& fileName);
 
   HttpRequest _request;
 };

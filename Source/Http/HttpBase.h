@@ -7,50 +7,53 @@ namespace webserver::http {
 
 using HeadersType = std::unordered_map<std::string, std::string>;
 
-enum class StatusCode : std::uint16_t {
-  HTTP_100_CONTINUE = 100,
-  HTTP_101_SWITCHING_PROTOCOLS = 101,
-  HTTP_102_PROCESSING = 102,
+#define LIST_OF_HTTP_STATUS_CODES                                        \
+  X(100, CONTINUE, "Continue")                                           \
+  X(101, SWITCHING_PROTOCOLS, "Switching Protocols")                     \
+  X(102, PROCESSING, "Processing")                                       \
+                                                                         \
+  X(200, OK, "OK")                                                       \
+  X(201, CREATED, "Created")                                             \
+  X(202, ACCEPTED, "Accepted")                                           \
+  X(203, NON_AUTHORITATIVE_INFORMATION, "Non-Authoritative Information") \
+  X(204, NO_CONTENT, "No Content")                                       \
+  X(205, RESET_CONTENT, "Reset Content")                                 \
+  X(206, PARTIAL_CONTENT, "Partial Content")                             \
+                                                                         \
+  X(300, MULTIPLE_CHOICES, "Multiple Choices")                           \
+  X(301, MOVED_PERMANENTLY, "Moved Permanently")                         \
+  X(302, FOUND, "Found")                                                 \
+  X(303, SEE_OTHER, "See Other")                                         \
+  X(304, NOT_MODIFIED, "Not Modified")                                   \
+  X(307, TEMPORARY_REDIRECT, "Temporary Redirect")                       \
+  X(308, PERMANENT_REDIRECT, "Permanent Redirect")                       \
+                                                                         \
+  X(400, BAD_REQUEST, "Bad Request")                                     \
+  X(401, UNAUTHORIZED, "Unauthorized")                                   \
+  X(402, PAYMENT_REQUIRED, "Payment Required")                           \
+  X(403, FORBIDDEN, "Forbidden")                                         \
+  X(404, NOT_FOUND, "Not Found")                                         \
+  X(405, METHOD_NOT_ALLOWED, "Method Not Allowed")                       \
+  X(406, NOT_ACCEPTABLE, "Not Acceptable")                               \
+  X(408, REQUEST_TIMEOUT, "Request Timeout")                             \
+  X(409, CONFLICT, "Conflict")                                           \
+  X(410, GONE, "Gone")                                                   \
+  X(411, LENGTH_REQUIRED, "Length Required")                             \
+  X(413, PAYLOAD_TOO_LARGE, "Payload Too Large")                         \
+  X(414, URI_TOO_LONG, "URI Too Long")                                   \
+  X(415, UNSUPPORTED_MEDIA_TYPE, "Unsupported Media Type")               \
+  X(429, TOO_MANY_REQUESTS, "Too Many Requests")                         \
+                                                                         \
+  X(500, INTERNAL_SERVER_ERROR, "Internal Server Error")                 \
+  X(501, NOT_IMPLEMENTED, "Not Implemented")                             \
+  X(502, BAD_GATEWAY, "Bad Gateway")                                     \
+  X(503, SERVICE_UNAVAILABLE, "Service Unavailable")                     \
+  X(504, GATEWAY_TIMEOUT, "Gateway Timeout")                             \
+  X(505, HTTP_VERSION_NOT_SUPPORTED, "HTTP Version Not Supported")
 
-  HTTP_200_OK = 200,
-  HTTP_201_CREATED = 201,
-  HTTP_202_ACCEPTED = 202,
-  HTTP_203_NON_AUTHORITATIVE_INFORMATION = 203,
-  HTTP_204_NO_CONTENT = 204,
-  HTTP_205_RESET_CONTENT = 205,
-  HTTP_206_PARTIAL_CONTENT = 206,
-
-  HTTP_300_MULTIPLE_CHOICES = 300,
-  HTTP_301_MOVED_PERMANENTLY = 301,
-  HTTP_302_FOUND = 302,
-  HTTP_303_SEE_OTHER = 303,
-  HTTP_304_NOT_MODIFIED = 304,
-  HTTP_307_TEMPORARY_REDIRECT = 307,
-  HTTP_308_PERMANENT_REDIRECT = 308,
-
-  HTTP_400_BAD_REQUEST = 400,
-  HTTP_401_UNAUTHORIZED = 401,
-  HTTP_402_PAYMENT_REQUIRED = 402,
-  HTTP_403_FORBIDDEN = 403,
-  HTTP_404_NOT_FOUND = 404,
-  HTTP_405_METHOD_NOT_ALLOWED = 405,
-  HTTP_406_NOT_ACCEPTABLE = 406,
-  HTTP_408_REQUEST_TIMEOUT = 408,
-  HTTP_409_CONFLICT = 409,
-  HTTP_410_GONE = 410,
-  HTTP_411_LENGTH_REQUIRED = 411,
-  HTTP_413_PAYLOAD_TOO_LARGE = 413,
-  HTTP_414_URI_TOO_LONG = 414,
-  HTTP_415_UNSUPPORTED_MEDIA_TYPE = 415,
-  HTTP_429_TOO_MANY_REQUESTS = 429,
-
-  HTTP_500_INTERNAL_SERVER_ERROR = 500,
-  HTTP_501_NOT_IMPLEMENTED = 501,
-  HTTP_502_BAD_GATEWAY = 502,
-  HTTP_503_SERVICE_UNAVAILABLE = 503,
-  HTTP_504_GATEWAY_TIMEOUT = 504,
-  HTTP_505_HTTP_VERSION_NOT_SUPPORTED = 505
-};
+#define X(numCode, status, reasonPhrase) HTTP_##numCode##_##status = numCode,
+enum class StatusCode : std::uint16_t { LIST_OF_HTTP_STATUS_CODES };
+#undef X
 
 struct StatusCodeHash {
   std::size_t operator()(StatusCode code) const noexcept {
@@ -58,80 +61,41 @@ struct StatusCodeHash {
   }
 };
 
-inline std::unordered_map<StatusCode, std::string_view, StatusCodeHash>
-generateStatusCodeMap() {
-  static const std::unordered_map<StatusCode, std::string_view, StatusCodeHash>
-      statusCodeReasonPhrase = {
-          {StatusCode::HTTP_100_CONTINUE, "Continue"},
-          {StatusCode::HTTP_101_SWITCHING_PROTOCOLS, "Switching Protocols"},
-          {StatusCode::HTTP_102_PROCESSING, "Processing"},
+using CodeToReasonMapType =
+    std::unordered_map<StatusCode, std::string_view, StatusCodeHash>;
 
-          {StatusCode::HTTP_200_OK, "OK"},
-          {StatusCode::HTTP_201_CREATED, "Created"},
-          {StatusCode::HTTP_202_ACCEPTED, "Accepted"},
-          {StatusCode::HTTP_203_NON_AUTHORITATIVE_INFORMATION,
-           "Non-Authoritative Information"},
-          {StatusCode::HTTP_204_NO_CONTENT, "No Content"},
-          {StatusCode::HTTP_205_RESET_CONTENT, "Reset Content"},
-          {StatusCode::HTTP_206_PARTIAL_CONTENT, "Partial Content"},
+#define X(numCode, status, reasonPhrase) {StatusCode::HTTP_##numCode##_##status, reasonPhrase},
+inline CodeToReasonMapType getStatusCodeToReasonPhraseMap() {
+  static const CodeToReasonMapType statusCodeToReason = {
+      LIST_OF_HTTP_STATUS_CODES};
 
-          {StatusCode::HTTP_300_MULTIPLE_CHOICES, "Multiple Choices"},
-          {StatusCode::HTTP_301_MOVED_PERMANENTLY, "Moved Permanently"},
-          {StatusCode::HTTP_302_FOUND, "Found"},
-          {StatusCode::HTTP_303_SEE_OTHER, "See Other"},
-          {StatusCode::HTTP_304_NOT_MODIFIED, "Not Modified"},
-          {StatusCode::HTTP_307_TEMPORARY_REDIRECT, "Temporary Redirect"},
-          {StatusCode::HTTP_308_PERMANENT_REDIRECT, "Permanent Redirect"},
-
-          {StatusCode::HTTP_400_BAD_REQUEST, "Bad Request"},
-          {StatusCode::HTTP_401_UNAUTHORIZED, "Unauthorized"},
-          {StatusCode::HTTP_402_PAYMENT_REQUIRED, "Payment Required"},
-          {StatusCode::HTTP_403_FORBIDDEN, "Forbidden"},
-          {StatusCode::HTTP_404_NOT_FOUND, "Not Found"},
-          {StatusCode::HTTP_405_METHOD_NOT_ALLOWED, "Method Not Allowed"},
-          {StatusCode::HTTP_406_NOT_ACCEPTABLE, "Not Acceptable"},
-          {StatusCode::HTTP_408_REQUEST_TIMEOUT, "Request Timeout"},
-          {StatusCode::HTTP_409_CONFLICT, "Conflict"},
-          {StatusCode::HTTP_410_GONE, "Gone"},
-          {StatusCode::HTTP_411_LENGTH_REQUIRED, "Length Required"},
-          {StatusCode::HTTP_413_PAYLOAD_TOO_LARGE, "Payload Too Large"},
-          {StatusCode::HTTP_414_URI_TOO_LONG, "URI Too Long"},
-          {StatusCode::HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-           "Unsupported Media Type"},
-          {StatusCode::HTTP_429_TOO_MANY_REQUESTS, "Too Many Requests"},
-
-          {StatusCode::HTTP_500_INTERNAL_SERVER_ERROR, "Internal Server Error"},
-          {StatusCode::HTTP_501_NOT_IMPLEMENTED, "Not Implemented"},
-          {StatusCode::HTTP_502_BAD_GATEWAY, "Bad Gateway"},
-          {StatusCode::HTTP_503_SERVICE_UNAVAILABLE, "Service Unavailable"},
-          {StatusCode::HTTP_504_GATEWAY_TIMEOUT, "Gateway Timeout"},
-          {StatusCode::HTTP_505_HTTP_VERSION_NOT_SUPPORTED,
-           "HTTP Version Not Supported"}};
-
-  return statusCodeReasonPhrase;
+  return statusCodeToReason;
 }
+#undef X
 
-enum class MethodType : std::uint8_t {
-  GET = 0,
-  POST,
-  HEAD,
-  OPTIONS,
-  PATCH,
-  PUT,
-  DELETE
-};
+#define LIST_OF_HTTP_METHODS \
+  X(GET)                     \
+  X(POST)                    \
+  X(HEAD)                    \
+  X(OPTIONS)                 \
+  X(PATCH)                   \
+  X(PUT)                     \
+  X(DELETE)
 
-inline std::unordered_map<std::string_view, MethodType> generateMethodsMap() {
-  static const std::unordered_map<std::string_view, MethodType> map = {
-      {"GET", MethodType::GET},      {"POST", MethodType::POST},
-      {"HEAD", MethodType::HEAD},    {"OPTIONS", MethodType::OPTIONS},
-      {"PATCH", MethodType::PATCH},  {"PUT", MethodType::PUT},
-      {"DELETE", MethodType::DELETE}};
+#define X(method) method,
+enum class HttpMethod : std::uint8_t { LIST_OF_HTTP_METHODS };
+#undef X
 
-  return map;
+using StrToMethodMapType = std::unordered_map<std::string_view, HttpMethod>;
+
+#define X(method) {std::string_view(#method), HttpMethod::method},
+inline StrToMethodMapType getStrToMethodMap() {
+  static const StrToMethodMapType strToMethod = {LIST_OF_HTTP_METHODS};
+  return strToMethod;
 }
+#undef X
 
-enum class HTTPVersion : std::uint8_t {
+enum class HttpVersion : std::uint8_t {
   HTTP_0_9 = 0,  // HTTP/0.9
   HTTP_1_0,      // HTTP/1.0
   HTTP_1_1,      // HTTP/1.1

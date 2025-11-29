@@ -40,6 +40,8 @@ HttpResponse StaticFileHandler::handle() const {
   std::stringstream stringStream;
   stringStream << fileStream.rdbuf();
 
+  headers["Content-Type"] = _getMimeTypeByFileName(fullFilePath);
+
   return HttpResponse{.statusCode = StatusCode::HTTP_200_OK,
                       .body = stringStream.str(),
                       .headers = headers};
@@ -50,8 +52,21 @@ bool StaticFileHandler::_containsTwoDotsPattern(const std::string& uri) {
 }
 
 std::string StaticFileHandler::_getMimeTypeByFileName(
-    const std::string& fileName) {
-  return "text/html";  // TODO complete logic
+    const std::filesystem::path& fileName) {
+  static const std::unordered_map<std::string, std::string>
+      extensionToMimeType = {{".html", "text/html"},
+                             {".css", "text/css"},
+                             {".js", "application/javascript"},
+                             {".png", "image/png"},
+                             {".jpg", "image/jpeg"},
+                             {".jpeg", "image/jpeg"},
+                             {".gif", "image/gif"},
+                             {".svg", "image/svg+xml"},
+                             {".json", "application/json"},
+                             {".txt", "text/plain"},
+                             {".wasm", "application/wasm"}};
+
+  return extensionToMimeType.at(fileName.extension());
 }
 
 }  // namespace webserver::http

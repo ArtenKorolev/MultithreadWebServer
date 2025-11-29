@@ -33,9 +33,9 @@ TEST(HttpParserTest, ParsesSimpleGetRequest) {
 
   EXPECT_EQ(headers.at("host"), "localhost");
   EXPECT_EQ(headers.at("user-agent"), "curl/7.68.0");
-  EXPECT_EQ(method, MethodType::GET);
+  EXPECT_EQ(method, HttpMethod::GET);
   EXPECT_EQ(uri, "/index.html");
-  EXPECT_EQ(httpVersion, HTTPVersion::HTTP_1_1);
+  EXPECT_EQ(httpVersion, HttpVersion::HTTP_1_1);
   EXPECT_TRUE(body.empty());
 }
 
@@ -50,9 +50,9 @@ TEST(HttpParserTest, ParsesPostRequestWithBody) {
 
   const HttpRequest req = HttpParser::parse(rawRequest);
 
-  EXPECT_EQ(req.method, MethodType::POST);
+  EXPECT_EQ(req.method, HttpMethod::POST);
   EXPECT_EQ(req.uri, "/submit");
-  EXPECT_EQ(req.httpVersion, HTTPVersion::HTTP_1_1);
+  EXPECT_EQ(req.httpVersion, HttpVersion::HTTP_1_1);
   EXPECT_EQ(req.body, "Hello world");
 }
 
@@ -65,9 +65,9 @@ TEST(HttpParserTest, ParsesHeadersWithExtraSpaces) {
 
   const HttpRequest req = HttpParser::parse(rawRequest);
 
-  EXPECT_EQ(req.method, MethodType::GET);
+  EXPECT_EQ(req.method, HttpMethod::GET);
   EXPECT_EQ(req.uri, "/test");
-  EXPECT_EQ(req.httpVersion, HTTPVersion::HTTP_1_1);
+  EXPECT_EQ(req.httpVersion, HttpVersion::HTTP_1_1);
   EXPECT_EQ(req.headers.at("host"), "example.com");
 }
 
@@ -115,7 +115,7 @@ TEST(HttpParserTest, HandlesHttp10Request) {
 
   const HttpRequest req = HttpParser::parse(rawRequest);
 
-  EXPECT_EQ(req.httpVersion, HTTPVersion::HTTP_1_0);
+  EXPECT_EQ(req.httpVersion, HttpVersion::HTTP_1_0);
   EXPECT_EQ(req.uri, "/old");
 }
 
@@ -227,15 +227,15 @@ TEST(HttpParserTest, AllHttpVersions) {
     const HttpRequest req = HttpParser::parse(rawRequest);
 
     if (v == "HTTP/0.9")
-      EXPECT_EQ(req.httpVersion, HTTPVersion::HTTP_0_9);
+      EXPECT_EQ(req.httpVersion, HttpVersion::HTTP_0_9);
     else if (v == "HTTP/1.0")
-      EXPECT_EQ(req.httpVersion, HTTPVersion::HTTP_1_0);
+      EXPECT_EQ(req.httpVersion, HttpVersion::HTTP_1_0);
     else if (v == "HTTP/1.1")
-      EXPECT_EQ(req.httpVersion, HTTPVersion::HTTP_1_1);
+      EXPECT_EQ(req.httpVersion, HttpVersion::HTTP_1_1);
     else if (v == "HTTP/2")
-      EXPECT_EQ(req.httpVersion, HTTPVersion::HTTP_2);
+      EXPECT_EQ(req.httpVersion, HttpVersion::HTTP_2);
     else if (v == "HTTP/3")
-      EXPECT_EQ(req.httpVersion, HTTPVersion::HTTP_3);
+      EXPECT_EQ(req.httpVersion, HttpVersion::HTTP_3);
   }
 }
 

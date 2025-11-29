@@ -69,7 +69,7 @@ void HttpParser::_parseRequestLine(const std::string &request,
   int minor = 0;
 
   int i = 0;
-  for (i; i < requestLine.size(); ++i) {
+  for (; i < requestLine.size(); ++i) {
     const auto chr = requestLine[i];
     switch (parsingState) {
       case HTTP_REQUEST_LINE_PARSING_STATE::METHOD:
@@ -80,7 +80,7 @@ void HttpParser::_parseRequestLine(const std::string &request,
         if (chr == ' ') {
           const std::string_view method =
               requestLine.substr(0, methodEndPointer);
-          outRequest.method = generateMethodsMap().at(method);
+          outRequest.method = getStrToMethodMap().at(method);
           parsingState = HTTP_REQUEST_LINE_PARSING_STATE::SPACES_AFTER_METHOD;
           break;
         }
@@ -193,15 +193,15 @@ void HttpParser::_parseRequestLine(const std::string &request,
   }
 
   if (major == 0 && minor == 9) {
-    outRequest.httpVersion = HTTPVersion::HTTP_0_9;
+    outRequest.httpVersion = HttpVersion::HTTP_0_9;
   } else if (major == 1 && minor == 0) {
-    outRequest.httpVersion = HTTPVersion::HTTP_1_0;
+    outRequest.httpVersion = HttpVersion::HTTP_1_0;
   } else if (major == 1 && minor == 1) {
-    outRequest.httpVersion = HTTPVersion::HTTP_1_1;
+    outRequest.httpVersion = HttpVersion::HTTP_1_1;
   } else if (major == 2 && minor == 0) {
-    outRequest.httpVersion = HTTPVersion::HTTP_2;
+    outRequest.httpVersion = HttpVersion::HTTP_2;
   } else if (major == 3 && minor == 0) {
-    outRequest.httpVersion = HTTPVersion::HTTP_3;
+    outRequest.httpVersion = HttpVersion::HTTP_3;
   } else {
     throw std::runtime_error("invalid HTTP version");
   }
