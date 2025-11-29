@@ -48,7 +48,7 @@ TEST(HttpParserTest, ParsesPostRequestWithBody) {
       "\r\n"
       "Hello world";
 
-  const HttpRequest req = HttpParser::parse(rawRequest);
+  const HttpRequest req = HttpParser{rawRequest}.parse();
 
   EXPECT_EQ(req.method, HttpMethod::POST);
   EXPECT_EQ(req.uri, "/submit");
@@ -63,7 +63,7 @@ TEST(HttpParserTest, ParsesHeadersWithExtraSpaces) {
       "User-Agent: curl/7.68.0 \r\n"
       "\r\n";
 
-  const HttpRequest req = HttpParser::parse(rawRequest);
+  const HttpRequest req = HttpParser{rawRequest}.parse();
 
   EXPECT_EQ(req.method, HttpMethod::GET);
   EXPECT_EQ(req.uri, "/test");
@@ -78,7 +78,7 @@ TEST(HttpParserTest, HandlesLowercaseAndMixedCaseHeaders) {
       "Content-Type: text/plain\r\n"
       "\r\n";
 
-  const HttpRequest req = HttpParser::parse(rawRequest);
+  const HttpRequest req = HttpParser{rawRequest}.parse();
 
   EXPECT_EQ(req.headers.at("host"), "localhost");
   EXPECT_EQ(req.headers.at("content-type"), "text/plain");
@@ -90,7 +90,7 @@ TEST(HttpParserTest, ParsesRequestWithQueryString) {
       "Host: localhost\r\n"
       "\r\n";
 
-  const HttpRequest req = HttpParser::parse(rawRequest);
+  const HttpRequest req = HttpParser{rawRequest}.parse();
 
   EXPECT_EQ(req.uri, "/search?q=test");
 }
@@ -102,7 +102,7 @@ TEST(HttpParserTest, ParsesPostWithEmptyBody) {
       "Content-Length: 0\r\n"
       "\r\n";
 
-  const HttpRequest req = HttpParser::parse(rawRequest);
+  const HttpRequest req = HttpParser{rawRequest}.parse();
 
   EXPECT_TRUE(req.body.empty());
 }
@@ -113,7 +113,7 @@ TEST(HttpParserTest, HandlesHttp10Request) {
       "Host: example.com\r\n"
       "\r\n";
 
-  const HttpRequest req = HttpParser::parse(rawRequest);
+  const HttpRequest req = HttpParser{rawRequest}.parse();
 
   EXPECT_EQ(req.httpVersion, HttpVersion::HTTP_1_0);
   EXPECT_EQ(req.uri, "/old");
@@ -122,14 +122,14 @@ TEST(HttpParserTest, HandlesHttp10Request) {
 TEST(HttpParserTest, ThrowsOnMalformedRequestLine) {
   const std::string rawRequest = "BADREQUEST\r\nHost: x\r\n\r\n";
 
-  EXPECT_THROW(const auto t = HttpParser::parse(rawRequest),
+  EXPECT_THROW(const auto t = HttpParser{rawRequest}parse(),
                std::runtime_error);
 }
 
 TEST(HttpParserTest, ThrowsOnInvalidMethod) {
   const std::string rawRequest = "FOO / HTTP/1.1\r\nHost: x\r\n\r\n";
 
-  EXPECT_THROW(const auto t = HttpParser::parse(rawRequest), std::out_of_range);
+  EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(), std::out_of_range);
 }
 
 // Заголовок без значения
@@ -140,7 +140,7 @@ TEST(HttpParserTest, HeaderWithoutValue) {
       "Host: localhost\r\n"
       "\r\n";
 
-  const HttpRequest req = HttpParser::parse(rawRequest);
+  const HttpRequest req = HttpParser{rawRequest}.parse();
 
   EXPECT_EQ(req.headers.at("x-empty-header"), "");
   EXPECT_EQ(req.headers.at("host"), "localhost");
@@ -154,7 +154,7 @@ TEST(HttpParserTest, HeaderWithTabsAroundColon) {
       "User-Agent:\tcurl/7.68.0\r\n"
       "\r\n";
 
-  const HttpRequest req = HttpParser::parse(rawRequest);
+  const HttpRequest req = HttpParser{rawRequest}.parse();
 
   EXPECT_EQ(req.headers.at("host"), "example.com");
   EXPECT_EQ(req.headers.at("user-agent"), "curl/7.68.0");
@@ -170,7 +170,7 @@ TEST(HttpParserTest, LongHeaderValue) {
       "\r\n"
       "\r\n";
 
-  const HttpRequest req = HttpParser::parse(rawRequest);
+  const HttpRequest req = HttpParser{rawRequest}.parse();
 
   EXPECT_EQ(req.headers.at("x-long-header"), longValue);
 }
@@ -181,7 +181,7 @@ TEST(HttpParserTest, LastHeaderWithoutTrailingCRLF) {
       "Host: localhost\r\n"
       "User-Agent: curl/7.68.0\r\n";
 
-  EXPECT_THROW(const auto t = HttpParser::parse(rawRequest),
+  EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(),
                std::runtime_error);
 }
 
@@ -193,7 +193,7 @@ TEST(HttpParserTest, DuplicateHeaders) {
       "X-Test: two\r\n"
       "\r\n";
 
-  const HttpRequest req = HttpParser::parse(rawRequest);
+  const HttpRequest req = HttpParser{rawRequest}.parse();
 
   // В твоей реализации последний должен перезаписать первый
   EXPECT_EQ(req.headers.at("x-test"), "two");
@@ -206,7 +206,7 @@ TEST(HttpParserTest, HeaderNameWithSpaces) {
       "X Bad: value\r\n"
       "\r\n";
 
-  EXPECT_THROW(const auto t = HttpParser::parse(rawRequest),
+  EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(),
                std::runtime_error);
 }
 
@@ -214,7 +214,7 @@ TEST(HttpParserTest, HeaderNameWithSpaces) {
 TEST(HttpParserTest, EmptyRequest) {
   const std::string rawRequest = "";
 
-  EXPECT_THROW(const auto t = HttpParser::parse(rawRequest),
+  EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(),
                std::runtime_error);
 }
 
@@ -224,7 +224,7 @@ TEST(HttpParserTest, AllHttpVersions) {
                                                "HTTP/1.1", "HTTP/2", "HTTP/3"};
   for (const auto& v : versions) {
     const std::string rawRequest = "GET / " + v + "\r\nHost: localhost\r\n\r\n";
-    const HttpRequest req = HttpParser::parse(rawRequest);
+    const HttpRequest req = HttpParser{rawRequest}.parse();
 
     if (v == "HTTP/0.9")
       EXPECT_EQ(req.httpVersion, HttpVersion::HTTP_0_9);
@@ -246,7 +246,7 @@ TEST(HttpParserTest, MalformedHttpVersion) {
 
   for (const auto& v : badVersions) {
     const std::string rawRequest = "GET / " + v + "\r\nHost: localhost\r\n\r\n";
-    EXPECT_THROW(const auto t = HttpParser::parse(rawRequest),
+    EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(),
                  std::runtime_error);
   }
 }
@@ -254,6 +254,6 @@ TEST(HttpParserTest, MalformedHttpVersion) {
 TEST(HttpParserTest, GarbadgeAfterHttpVersion) {
   const std::string rawRequest =
       "GET / HTTP/1.1  df\r\nHost: localhost\r\n\r\n";
-  EXPECT_THROW(const auto t = HttpParser::parse(rawRequest),
+  EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(),
                std::runtime_error);
 }
