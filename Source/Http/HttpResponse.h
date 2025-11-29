@@ -6,7 +6,7 @@
 
 namespace webserver::http {
 
-constexpr auto kDefaultHttpVersion = "1.1";
+constexpr auto kDefaultHttpVersion = "HTTP/1.1";
 
 struct HttpResponse {
   [[nodiscard]] std::string toString() const;
@@ -18,9 +18,9 @@ struct HttpResponse {
 
  private:
   [[nodiscard]] std::string _generateStatusLine() const;
-  [[nodiscard]] std::string _statusCodeToString() const;
-  [[nodiscard]] std::string _headersToString() const;
-  static void _addHeader(std::string &headersString, std::string name, std::string value);
+  [[nodiscard]] std::string _generateHeadersString() const;
+  static void _addHeader(std::string &headersString, std::string name,
+                         std::string value);
 };
 
 }  // namespace webserver::http

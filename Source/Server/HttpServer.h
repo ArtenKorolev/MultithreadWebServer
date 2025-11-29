@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "HttpRequest.h"
+#include "HttpResponse.h"
 #include "SocketFactory.h"
 #include "ThreadPool.h"
 
@@ -23,6 +25,8 @@ class HttpServer {
 
  private:
   static void _serveClient(const std::unique_ptr<ISocket> &clientSocket);
+  // static http::HttpResponse _buildResponseForRequest(
+  //    const http::HttpRequest &request);
   void _throwIfPortIsInvalid() const;
 
   core::ThreadPool _threadPool;

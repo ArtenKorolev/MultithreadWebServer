@@ -52,16 +52,6 @@ enum class StatusCode : std::uint16_t {
   HTTP_505_HTTP_VERSION_NOT_SUPPORTED = 505
 };
 
-enum class MethodType : std::uint8_t {
-  GET,
-  POST,
-  HEAD,
-  OPTIONS,
-  PATCH,
-  PUT,
-  DELETE
-};
-
 struct StatusCodeHash {
   std::size_t operator()(StatusCode code) const noexcept {
     return static_cast<std::size_t>(code);
@@ -116,9 +106,37 @@ generateStatusCodeMap() {
           {StatusCode::HTTP_503_SERVICE_UNAVAILABLE, "Service Unavailable"},
           {StatusCode::HTTP_504_GATEWAY_TIMEOUT, "Gateway Timeout"},
           {StatusCode::HTTP_505_HTTP_VERSION_NOT_SUPPORTED,
-           "HTTP Version Not Supported"},
-      };
+           "HTTP Version Not Supported"}};
 
   return statusCodeReasonPhrase;
 }
+
+enum class MethodType : std::uint8_t {
+  GET = 0,
+  POST,
+  HEAD,
+  OPTIONS,
+  PATCH,
+  PUT,
+  DELETE
+};
+
+inline std::unordered_map<std::string_view, MethodType> generateMethodsMap() {
+  static const std::unordered_map<std::string_view, MethodType> map = {
+      {"GET", MethodType::GET},      {"POST", MethodType::POST},
+      {"HEAD", MethodType::HEAD},    {"OPTIONS", MethodType::OPTIONS},
+      {"PATCH", MethodType::PATCH},  {"PUT", MethodType::PUT},
+      {"DELETE", MethodType::DELETE}};
+
+  return map;
+}
+
+enum class HTTPVersion : std::uint8_t {
+  HTTP_0_9 = 0,  // HTTP/0.9
+  HTTP_1_0,      // HTTP/1.0
+  HTTP_1_1,      // HTTP/1.1
+  HTTP_2,        // HTTP/2
+  HTTP_3,        // HTTP/3
+};
+
 }  // namespace webserver::http

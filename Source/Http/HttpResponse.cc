@@ -1,26 +1,23 @@
 #include "HttpResponse.h"
 
+#include <fmt/core.h>
+
 #include "Utils.h"
 
 namespace webserver::http {
 
 std::string HttpResponse::toString() const {
-  const auto statusLine = _generateStatusLine();
-  const auto headers = _headersToString();
-  return statusLine + "\r\n" + headers + "\r\n" + body + "\r\n\r\n";
+  return fmt::format("{}\r\n{}\r\n{}", _generateStatusLine(),
+                     _generateHeadersString(), body);
 }
 
 std::string HttpResponse::_generateStatusLine() const {
-  return "HTTP/" + httpVersion + ' ' + _statusCodeToString() + ' ' +
-         std::string(generateStatusCodeMap()[statusCode]);
+  return fmt::format("{} {} {}", httpVersion,
+                     static_cast<std::uint16_t>(statusCode),
+                     generateStatusCodeMap()[statusCode]);
 }
 
-std::string HttpResponse::_statusCodeToString() const {
-  const auto stausCodeValue = static_cast<int>(statusCode);
-  return std::to_string(stausCodeValue);
-}
-
-std::string HttpResponse::_headersToString() const {
+std::string HttpResponse::_generateHeadersString() const {
   std::string headersString;
 
   _addHeader(headersString, "Content-Length", std::to_string(body.size()));
@@ -35,7 +32,7 @@ std::string HttpResponse::_headersToString() const {
 
 void HttpResponse::_addHeader(std::string& headersString, std::string name,
                               std::string value) {
-  headersString += std::move(name) + ": " + std::move(value) + "\r\n";
+  headersString += fmt::format("{}: {}\r\n", std::move(name), std::move(value));
 }
 
 }  // namespace webserver::http

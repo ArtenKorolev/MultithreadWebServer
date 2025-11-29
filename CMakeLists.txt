@@ -5,6 +5,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(MultithreadWebServer)
 
+include(FetchContent)
+
+FetchContent_Declare(
+        fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG 10.2.1
+)
+
+FetchContent_MakeAvailable(fmt)
+
 file(GLOB CPP_SOURCES
         "Source/*.cc"
         "Source/Socket/*.cc"
@@ -14,6 +24,7 @@ file(GLOB CPP_SOURCES
         "Source/Utils/*.cc"
 )
 
+
 add_executable(${PROJECT_NAME} ${CPP_SOURCES})
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -22,6 +33,8 @@ elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(${PROJECT_NAME} PRIVATE -O2 -Wall -fno-rtti)
 endif ()
 
+target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
+
 target_include_directories(${PROJECT_NAME} PRIVATE
         Source/Socket
         Source/Server
@@ -29,3 +42,29 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         Source/Http
         Source/Utils
 )
+
+# =============== TESTS ===============
+
+FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.14.0
+)
+
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+
+file(GLOB TESTS_SRC
+        "Tests/*.cc"
+        "Source/Http/*.cc"
+        "Source/Utils/*.cc"
+)
+
+add_executable(tests ${TESTS_SRC})
+
+target_link_libraries(tests gtest gtest_main fmt::fmt)
+
+target_include_directories(tests PRIVATE Source/Http Source/Utils)
+
+add_test(NAME WebServerTests COMMAND tests)
