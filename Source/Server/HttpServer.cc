@@ -7,7 +7,7 @@
 
 #include "HttpParser.h"
 #include "HttpResponse.h"
-#include "HttpResponseBuilder.h"
+#include "StaticFileHandler.h"
 
 namespace webserver::net {
 
@@ -42,8 +42,8 @@ void HttpServer::startServerLoop() {
 void HttpServer::_serveClient(const std::unique_ptr<ISocket>& clientSocket) {
   try {
     const auto requestObject{HttpParser::parse(clientSocket->receive())};
-    const HttpResponseBuilder responseBuilder{requestObject};
-    const auto response = responseBuilder.build();
+    const StaticFileHandler responseBuilder{requestObject};
+    const auto response = responseBuilder.handle();
     clientSocket->send(response.toString());
   } catch (const std::exception& e) {
     const auto response = HttpResponse{
@@ -51,50 +51,5 @@ void HttpServer::_serveClient(const std::unique_ptr<ISocket>& clientSocket) {
     clientSocket->send(response.toString());
   }
 }
-
-//
-// HttpResponse HttpServer::_buildResponseForRequest(const HttpRequest& request) {
-//   HttpResponse response;
-//
-//   if (std::ranges::starts_with(request.httpVersion, "HTTP/1")) {
-//     response = {
-//         .statusCode = StatusCode::HTTP_505_HTTP_VERSION_NOT_SUPPORTED,
-//         .body = "Server doesn't support HTTP version: " + request.httpVersion,
-//         .headers = {{"Connection", "close"},
-//                     {"Server", "webserver"},
-//                     {"Content-Type", "text/plain"}}};
-//   } else if (request.uri.size() == 1 && request.uri[0] == '/') {
-//     std::ifstream file{"public/welcome.html"};
-//     std::stringstream buffer;
-//     buffer << file.rdbuf();
-//
-//     response = {.statusCode = StatusCode::HTTP_200_OK,
-//                 .body = buffer.str(),
-//                 .headers = {{"Connection", "close"},
-//                             {"Server", "webserver"},
-//                             {"Content-Type", "text/html"}}};
-//   }
-//
-//   else if (std::ifstream stream{"public/" + request.uri}; !stream.is_open()) {
-//     response = {.statusCode = StatusCode::HTTP_404_NOT_FOUND,
-//                 .body = "Can't find file " + request.uri,
-//                 .headers = {{"Connection", "close"},
-//                             {"Server", "webserver"},
-//                             {"Content-Type", "text/plain"}}};
-//   } else {
-//     std::stringstream stringStream;
-//     stringStream << stream.rdbuf();
-//
-//     response = {.statusCode = StatusCode::HTTP_200_OK,
-//                 .body = stringStream.str(),
-//                 .headers = {{"Connection", "close"},
-//                             {"Server", "webserver"},
-//                             {"Content-Type", request.uri == "/favicon.ico"
-//                                                  ? "image/png"
-//                                                  : "text/html"}}};
-//   }
-//
-//   return response;
-// }
 
 }  // namespace webserver::net
