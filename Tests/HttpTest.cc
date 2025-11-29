@@ -29,7 +29,7 @@ TEST(HttpParserTest, ParsesSimpleGetRequest) {
       "\r\n";
 
   const auto [method, httpVersion, uri, headers, body] =
-      HttpParser::parse(rawRequest);
+      HttpParser{rawRequest}.parse();
 
   EXPECT_EQ(headers.at("host"), "localhost");
   EXPECT_EQ(headers.at("user-agent"), "curl/7.68.0");
@@ -122,14 +122,15 @@ TEST(HttpParserTest, HandlesHttp10Request) {
 TEST(HttpParserTest, ThrowsOnMalformedRequestLine) {
   const std::string rawRequest = "BADREQUEST\r\nHost: x\r\n\r\n";
 
-  EXPECT_THROW(const auto t = HttpParser{rawRequest}parse(),
+  EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(),
                std::runtime_error);
 }
 
 TEST(HttpParserTest, ThrowsOnInvalidMethod) {
   const std::string rawRequest = "FOO / HTTP/1.1\r\nHost: x\r\n\r\n";
 
-  EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(), std::out_of_range);
+  EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(),
+               std::out_of_range);
 }
 
 // Заголовок без значения
@@ -241,7 +242,7 @@ TEST(HttpParserTest, AllHttpVersions) {
 
 TEST(HttpParserTest, MalformedHttpVersion) {
   const std::vector<std::string> badVersions = {
-      "HTTP/0",  "HTTP/1.",      "HTTP/",     "HTTP/.",
+      "HTTP/0",  "HTTP/1.",      "HTTP/",      "HTTP/.",
       "HTTP/.1", "HTTP/111.111", "HTTP/1.1.1", "HTTP/ 1.1"};
 
   for (const auto& v : badVersions) {
