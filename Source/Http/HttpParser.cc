@@ -12,12 +12,12 @@ constexpr char kLF = '\n';
 constexpr std::string_view kCRLF = "\r\n";
 constexpr std::string_view kDoubleCRLF = "\r\n\r\n";
 
-HttpRequest HttpParser::parse(const std::string &request) {
+HttpRequest HttpParser::parse() const {
   HttpRequest result;
 
-  _parseRequestLine(request, result);
-  _parseHeaders(request, result);
-  _parseBody(request, result);
+  _parseRequestLine(result);
+  _parseHeaders(result);
+  _parseBody(result);
 
   return result;
 }
@@ -53,15 +53,14 @@ static std::unordered_set<char> getSymbolsAllowedInURI() {
 
 // This code is complete garbage, but it's going to be refactored soon
 // TODO refactor
-void HttpParser::_parseRequestLine(const std::string &request,
-                                   HttpRequest &outRequest) {
-  const std::size_t endOfRequestLine = request.find(kCRLF);
+void HttpParser::_parseRequestLine(HttpRequest &outRequest) const {
+  const std::size_t endOfRequestLine = _request.find(kCRLF);
 
   if (endOfRequestLine == std::string::npos) {
     throw std::runtime_error("Expected \\r\\n after request line");
   }
 
-  const std::string_view requestLine{request.data(), endOfRequestLine};
+  const std::string_view requestLine{_request.data(), endOfRequestLine};
 
   auto parsingState = HTTP_REQUEST_LINE_PARSING_STATE::METHOD;
   int methodEndPointer = 0;
@@ -221,17 +220,16 @@ enum class HTTP_HEADERS_PARSING_STATE : std::uint8_t {
 
 // This code also is going to be refactored
 // TODO refactor
-void HttpParser::_parseHeaders(const std::string &request,
-                               HttpRequest &outRequest) {
-  const auto headers = _extractHeaders(request);
+void HttpParser::_parseHeaders(HttpRequest &outRequest) const {
+  const auto headers = _getHeaders();
 
   auto parsingState = HTTP_HEADERS_PARSING_STATE::HEADER_NAME;
 
   std::string nameBuffer;
   std::string valueBuffer;
 
-  int i;
-  for (i = 0; i < headers.size(); ++i) {
+  int i = 0;
+  for (; i < headers.size(); ++i) {
     const char chr = headers[i];
     switch (parsingState) {
       case HTTP_HEADERS_PARSING_STATE::HEADER_NAME:
@@ -286,32 +284,31 @@ void HttpParser::_parseHeaders(const std::string &request,
   }
 }
 
-std::string HttpParser::_extractHeaders(const std::string &request) {
-  auto start = request.find(kCRLF);
+std::string HttpParser::_getHeaders() const {
+  auto start = _request.find(kCRLF);
   if (start == std::string::npos) {
     throw std::runtime_error("Malformed HTTP request: missing CRLF");
   }
 
   start += kCRLF.size();
 
-  auto end = request.find(kDoubleCRLF, start);
+  auto end = _request.find(kDoubleCRLF, start);
   if (end == std::string::npos) {
     throw std::runtime_error(R"(Malformed HTTP request: missing \r\n\r\n)");
   }
 
-  return request.substr(start, end - start);
+  return _request.substr(start, end - start);
 }
 
-void HttpParser::_parseBody(const std::string &request,
-                            HttpRequest &outRequest) {
-  const auto bodyStartPosition = request.find(kDoubleCRLF);
+void HttpParser::_parseBody(HttpRequest &outRequest) const {
+  const auto bodyStartPosition = _request.find(kDoubleCRLF);
 
   if (bodyStartPosition == std::string::npos) {
     throw std::runtime_error{R"(Expected \r\n\r\n before body)"};
   }
 
   const std::size_t bodyPos = bodyStartPosition + kDoubleCRLF.size();
-  outRequest.body = request.substr(bodyPos);
+  outRequest.body = _request.substr(bodyPos);
 }
 
 }  // namespace webserver::http

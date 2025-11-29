@@ -41,7 +41,7 @@ void HttpServer::startServerLoop() {
 
 void HttpServer::_serveClient(const std::unique_ptr<ISocket>& clientSocket) {
   try {
-    const auto requestObject{HttpParser::parse(clientSocket->receive())};
+    const auto requestObject{HttpParser{clientSocket->receive()}.parse()};
     const StaticFileHandler responseBuilder{requestObject};
     const auto response = responseBuilder.handle();
     clientSocket->send(response.toString());
