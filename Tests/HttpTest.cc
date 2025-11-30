@@ -243,7 +243,7 @@ TEST(HttpParserTest, AllHttpVersions) {
 TEST(HttpParserTest, MalformedHttpVersion) {
   const std::vector<std::string> badVersions = {
       "HTTP/0",  "HTTP/1.",      "HTTP/",      "HTTP/.",
-      "HTTP/.1", "HTTP/111.111", "HTTP/1.1.1", "HTTP/ 1.1"};
+      "HTTP/.1", "HTTP/111.111", "HTTP/1.1.1", "HTTP/ 1.1", "HTTTP/1.1"};
 
   for (const auto& v : badVersions) {
     const std::string rawRequest = "GET / " + v + "\r\nHost: localhost\r\n\r\n";
