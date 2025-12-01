@@ -7,27 +7,12 @@
 
 namespace webserver::http {
 
-enum class HttpRequestLineParsingState : std::uint8_t {
-  METHOD,
-  SPACES_AFTER_METHOD,
-  URI,
-  SPACES_AFTER_URI,
-  HTTP_VERSION_H,
-  HTTP_VERSION_HT,
-  HTTP_VERSION_HTT,
-  HTTP_VERSION_HTTP,
-  HTTP_VERSION_SLASH,
-  HTTP_VERSION_MAJOR,
-  HTTP_VERSION_DOT,
-  HTTP_VERSION_MINOR,
-  END_OF_HTTP_VERSION,
-  SPACES_AFTER_VERSION,
-};
+enum class HttpRequestLineParsingState : std::uint8_t;
 
 template <typename State>
 struct ParsingContext;
 
-enum class StepResult : std::uint8_t { CONTINUE, BREAK };
+enum class StepResult : std::uint8_t;
 
 class HttpParser {
  public:
@@ -59,6 +44,9 @@ class HttpParser {
   static void _expectDigit(char chr);
   static bool _isSpaceOrTab(char chr);
   static bool _isAsciiUppercase(char chr);
+  static bool _isEndOfLine(
+      const ParsingContext<HttpRequestLineParsingState> &parsingContext,
+      std::string_view requestLine);
 
   const std::string &_request;
 };
