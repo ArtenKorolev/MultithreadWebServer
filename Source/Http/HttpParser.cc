@@ -1,7 +1,7 @@
 #include "HttpParser.h"
 
-#include <format>
 #include <unordered_set>
+#include <utility>
 
 #include "Utils.h"
 #include "fmt/format.h"
@@ -82,7 +82,7 @@ void HttpParser::_parseRequestLine(HttpRequest &outRequest) const {
       .major = 0,
       .minor = 0,
       .state = HttpRequestLineParsingState::METHOD,
-      .chr = requestLine[0]};
+  };
 
   for (; parsingContext.chrIdx < requestLine.size(); ++parsingContext.chrIdx) {
     parsingContext.chr = requestLine[parsingContext.chrIdx];
@@ -221,7 +221,7 @@ inline StepResult HttpParser::_parseHttpVersionMajor(
   return StepResult::BREAK;
 }
 
-HttpVersion HttpParser::_getHttpVersion(
+inline HttpVersion HttpParser::_getHttpVersion(
     const ParsingContext<HttpRequestLineParsingState> &parsingContext) {
   if (parsingContext.major == 0 && parsingContext.minor == 9) {
     return HttpVersion::HTTP_0_9;
@@ -280,16 +280,16 @@ enum class HttpHeadersParsingState : std::uint8_t {
 // This code also is going to be refactored
 // TODO refactor
 void HttpParser::_parseHeaders(HttpRequest &outRequest) {
-  const auto headers = _getHeaders();
+  const auto [headersStart, headersEnd] = _getHeaders();
 
   auto parsingState = HttpHeadersParsingState::HEADER_NAME;
 
   std::string nameBuffer;
   std::string valueBuffer;
 
-  int i = 0;
-  for (; i < headers.size(); ++i) {
-    const char chr = headers[i];
+  int i = headersStart;
+  for (; std::cmp_less(i, headersEnd); ++i) {
+    const char chr = _request[i];
     switch (parsingState) {
       case HttpHeadersParsingState::HEADER_NAME:
         if (_isSpaceOrTab(chr)) {
@@ -343,7 +343,7 @@ void HttpParser::_parseHeaders(HttpRequest &outRequest) {
   }
 }
 
-std::string HttpParser::_getHeaders() const {
+inline std::pair<std::size_t, std::size_t> HttpParser::_getHeaders() const {
   auto start = _request.find(kCRLF);
   if (start == std::string::npos) {
     throw std::runtime_error("Malformed HTTP request: missing CRLF");
@@ -356,7 +356,7 @@ std::string HttpParser::_getHeaders() const {
     throw std::runtime_error(R"(Malformed HTTP request: missing \r\n\r\n)");
   }
 
-  return _request.substr(start, end - start);
+  return std::make_pair(start, end);
 }
 
 void HttpParser::_parseBody(HttpRequest &outRequest) const {

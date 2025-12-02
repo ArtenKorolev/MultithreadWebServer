@@ -16,7 +16,8 @@ enum class StepResult : std::uint8_t;
 
 class HttpParser {
  public:
-  explicit HttpParser(const std::string &request) noexcept : _request{request} {
+  explicit HttpParser(std::string request) noexcept
+      : _request{std::move(request)} {
   }
 
   [[nodiscard]] HttpRequest parse();
@@ -25,7 +26,7 @@ class HttpParser {
   void _parseRequestLine(HttpRequest &outRequest) const;
   void _parseHeaders(HttpRequest &outRequest);
   void _parseBody(HttpRequest &outRequest) const;
-  [[nodiscard]] std::string _getHeaders() const;
+  [[nodiscard]] std::pair<std::size_t, std::size_t> _getHeaders() const;
 
   static StepResult _parseMethod(
       ParsingContext<HttpRequestLineParsingState> &parsingContext,
@@ -48,7 +49,7 @@ class HttpParser {
       const ParsingContext<HttpRequestLineParsingState> &parsingContext,
       std::string_view requestLine);
 
-  const std::string &_request;
+  const std::string _request;
 };
 
 }  // namespace webserver::http
