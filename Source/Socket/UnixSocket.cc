@@ -25,6 +25,9 @@ UnixSocket::UnixSocket() {
     throw std::runtime_error("Unable to initialize socket");
   }
 
+  constexpr auto enable = 1;
+  setsockopt(fileDescriptor, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+
   _socketFd = fileDescriptor;
 }
 
