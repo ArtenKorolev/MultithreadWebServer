@@ -47,7 +47,7 @@ HttpResponse StaticFileHandler::handle() const {
                       .headers = headers};
 }
 
-bool StaticFileHandler::_containsTwoDotsPattern(const std::string& uri) {
+inline bool StaticFileHandler::_containsTwoDotsPattern(const std::string& uri) {
   return uri.find("..") != std::string::npos;
 }
 

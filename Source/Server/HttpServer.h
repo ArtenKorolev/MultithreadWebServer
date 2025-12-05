@@ -2,9 +2,7 @@
 
 #include <cstdint>
 
-#include "HttpRequest.h"
-#include "HttpResponse.h"
-#include "SocketFactory.h"
+#include "Socket.h"
 #include "ThreadPool.h"
 
 namespace webserver::net {
