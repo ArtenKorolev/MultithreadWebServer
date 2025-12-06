@@ -22,7 +22,7 @@ HttpRequest HttpParser::parse() {
 }
 
 static std::unordered_set<char> getSymbolsAllowedInURI() {
-  static std::unordered_set<char> symbolsAllowedInURI = {
+  static std::unordered_set symbolsAllowedInURI = {
       'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
       'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b',
       'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
@@ -35,11 +35,11 @@ static std::unordered_set<char> getSymbolsAllowedInURI() {
 
 template <typename State>
 struct ParsingContext {
-  int chrIdx;
-  int methodEndIndex;
-  int major;
-  int minor;
-  char chr;
+  int chrIdx{};
+  int methodEndIndex{};
+  std::optional<int> major;
+  int minor{};
+  char chr{};
   State state;
 };
 
@@ -75,11 +75,7 @@ void HttpParser::_parseRequestLine(HttpRequest &outRequest) const {
     throw std::runtime_error("empty request line");
   }
 
-  ParsingContext<HttpRequestLineParsingState> parsingContext{
-      .chrIdx = 0,
-      .methodEndIndex = 0,
-      .major = 0,
-      .minor = 0,
+  ParsingContext parsingContext{
       .state = HttpRequestLineParsingState::METHOD,
   };
 
@@ -207,6 +203,9 @@ inline StepResult HttpParser::_parseHttpVersionMajor(
     ParsingContext<HttpRequestLineParsingState> &parsingContext,
     const std::string_view requestLine) {
   if (parsingContext.chr == '.') {
+    if (!parsingContext.major.has_value()) {
+      throw std::runtime_error("dot after slash");
+    }
     if (_isEndOfLine(parsingContext, requestLine)) {
       throw std::runtime_error("Dot cannot be last");
     }
@@ -216,7 +215,8 @@ inline StepResult HttpParser::_parseHttpVersionMajor(
 
   _expectDigit(parsingContext.chr);
 
-  parsingContext.major = parsingContext.major * 10 + parsingContext.chr - '0';
+  parsingContext.major =
+      (parsingContext.major.value_or(0) * 10) + parsingContext.chr - '0';
   return StepResult::BREAK;
 }
 
