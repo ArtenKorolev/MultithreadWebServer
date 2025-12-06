@@ -47,6 +47,7 @@ class HttpParser {
   static bool _isEndOfLine(
       const ParsingContext<HttpRequestLineParsingState> &parsingContext,
       std::string_view requestLine);
+  static void _updateVersion(int &version, char chr);
 
   const std::string _request;
 };

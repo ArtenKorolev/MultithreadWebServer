@@ -37,7 +37,7 @@ template <typename State>
 struct ParsingContext {
   int chrIdx{};
   int methodEndIndex{};
-  std::optional<int> major;
+  int major{};
   int minor{};
   char chr{};
   State state;
@@ -53,6 +53,7 @@ enum class HttpRequestLineParsingState : std::uint8_t {
   HTTP_VERSION_HTT,
   HTTP_VERSION_HTTP,
   HTTP_VERSION_SLASH,
+  HTTP_VERSION_MAJOR_START,
   HTTP_VERSION_MAJOR,
   HTTP_VERSION_DOT,
   HTTP_VERSION_MINOR,
@@ -117,6 +118,12 @@ void HttpParser::_parseRequestLine(HttpRequest &outRequest) const {
         break;
       case HttpRequestLineParsingState::HTTP_VERSION_SLASH:
         _expect(parsingContext.chr, '/');
+        parsingContext.state =
+            HttpRequestLineParsingState::HTTP_VERSION_MAJOR_START;
+        break;
+      case HttpRequestLineParsingState::HTTP_VERSION_MAJOR_START:
+        _expectDigit(parsingContext.chr);
+        _updateVersion(parsingContext.major, parsingContext.chr);
         parsingContext.state = HttpRequestLineParsingState::HTTP_VERSION_MAJOR;
         break;
       case HttpRequestLineParsingState::HTTP_VERSION_MAJOR:
@@ -125,8 +132,7 @@ void HttpParser::_parseRequestLine(HttpRequest &outRequest) const {
       case HttpRequestLineParsingState::HTTP_VERSION_DOT:
         _expectDigit(parsingContext.chr);
       case HttpRequestLineParsingState::HTTP_VERSION_MINOR:
-        parsingContext.minor =
-            parsingContext.minor * 10 + parsingContext.chr - '0';
+        _updateVersion(parsingContext.minor, parsingContext.chr);
         parsingContext.state = HttpRequestLineParsingState::END_OF_HTTP_VERSION;
         break;
       case HttpRequestLineParsingState::END_OF_HTTP_VERSION:
@@ -203,9 +209,6 @@ inline StepResult HttpParser::_parseHttpVersionMajor(
     ParsingContext<HttpRequestLineParsingState> &parsingContext,
     const std::string_view requestLine) {
   if (parsingContext.chr == '.') {
-    if (!parsingContext.major.has_value()) {
-      throw std::runtime_error("dot after slash");
-    }
     if (_isEndOfLine(parsingContext, requestLine)) {
       throw std::runtime_error("Dot cannot be last");
     }
@@ -215,9 +218,12 @@ inline StepResult HttpParser::_parseHttpVersionMajor(
 
   _expectDigit(parsingContext.chr);
 
-  parsingContext.major =
-      (parsingContext.major.value_or(0) * 10) + parsingContext.chr - '0';
+  _updateVersion(parsingContext.major, parsingContext.chr);
   return StepResult::BREAK;
+}
+
+inline void HttpParser::_updateVersion(int &version, const char chr) {
+  version = (version * 10) + (chr - '0');
 }
 
 inline HttpVersion HttpParser::_getHttpVersion(
