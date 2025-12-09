@@ -250,7 +250,6 @@ TEST(HttpParserTest, MalformedHttpVersion) {
 
   for (const auto& v : badVersions) {
     const std::string rawRequest = "GET / " + v + "\r\nHost: localhost\r\n\r\n";
-    std::cout << v << '\n';
     EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(),
                  std::runtime_error);
   }

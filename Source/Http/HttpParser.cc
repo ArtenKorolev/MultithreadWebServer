@@ -3,7 +3,6 @@
 #include <fmt/core.h>
 
 #include <array>
-#include <iostream>
 #include <utility>
 
 namespace webserver::http {
@@ -293,12 +292,7 @@ INLINE bool HttpParser::_isAsciiUppercase(const char chr) {
 INLINE bool HttpParser::_isEndOfLine(
     const ParsingContext<HttpRequestLineParsingState> &parsingContext,
     const std::string_view requestLine) {
-  if (parsingContext.chrIdx == requestLine.size() - 1) {
-    std::cout << "chr: " << parsingContext.chr << '\n';
-    return true;
-  }
-
-  return false;
+  return parsingContext.chrIdx == requestLine.size() - 1;
 }
 
 enum class HttpHeadersParsingState : std::uint8_t {
