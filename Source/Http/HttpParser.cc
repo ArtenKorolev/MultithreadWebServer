@@ -2,7 +2,8 @@
 
 #include <fmt/core.h>
 
-#include <unordered_set>
+#include <array>
+#include <iostream>
 #include <utility>
 
 namespace webserver::http {
@@ -10,6 +11,8 @@ namespace webserver::http {
 constexpr char kCR = '\r';
 constexpr std::string_view kCRLF = "\r\n";
 constexpr std::string_view kDoubleCRLF = "\r\n\r\n";
+
+#define INLINE __attribute__((always_inline)) inline
 
 HttpRequest HttpParser::parse() {
   HttpRequest result;
@@ -21,17 +24,31 @@ HttpRequest HttpParser::parse() {
   return result;
 }
 
-static std::unordered_set<char> getSymbolsAllowedInURI() {
-  static std::unordered_set symbolsAllowedInURI = {
-      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b',
-      'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
-      'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3',
-      '4', '5', '6', '7', '8', '9', '-', '.', '_', '~', '!', '$', '&', '\'',
-      '(', ')', '*', '+', ',', ';', '=', ':', '@', '/', '?'};
+static constexpr std::array<bool, 256> makeUriSymbolsTable() {
+  std::array<bool, 256> uriTable{};
 
-  return symbolsAllowedInURI;
+  for (int chrCode = 'A'; chrCode <= 'Z'; ++chrCode) {
+    uriTable[chrCode] = true;
+  }
+
+  for (int chrCode = 'a'; chrCode <= 'z'; ++chrCode) {
+    uriTable[chrCode] = true;
+  }
+
+  for (int chrCode = '0'; chrCode <= '9'; ++chrCode) {
+    uriTable[chrCode] = true;
+  }
+
+  const char specials[] = {'-', '.', '_', '~', '!', '$', '&', '\'', '(', ')',
+                           '*', '+', ',', ';', '=', ':', '@', '/',  '?'};
+  for (char specialChr : specials) {
+    uriTable[static_cast<unsigned char>(specialChr)] = true;
+  }
+
+  return uriTable;
 }
+
+static constexpr std::array<bool, 256> uriSymbolsTable = makeUriSymbolsTable();
 
 template <typename State>
 struct ParsingContext {
@@ -82,79 +99,84 @@ void HttpParser::_parseRequestLine(HttpRequest &outRequest) const {
 
   for (; parsingContext.chrIdx < requestLine.size(); ++parsingContext.chrIdx) {
     parsingContext.chr = requestLine[parsingContext.chrIdx];
-    switch (parsingContext.state) {
-      case HttpRequestLineParsingState::METHOD:
-        if (_parseMethod(parsingContext, requestLine, outRequest) ==
-            StepResult::BREAK) {
-          break;
-        }
-      case HttpRequestLineParsingState::SPACES_AFTER_METHOD:
-        if (_parseSpacesAfterMethod(parsingContext) == StepResult::BREAK) {
-          break;
-        }
-      case HttpRequestLineParsingState::URI:
-        if (_parseUri(parsingContext, outRequest) == StepResult::BREAK) {
-          break;
-        }
-      case HttpRequestLineParsingState::SPACES_AFTER_URI:
-        if (_isSpaceOrTab(parsingContext.chr)) {
-          break;
-        }
-      case HttpRequestLineParsingState::HTTP_VERSION_H:
-        _expect(parsingContext.chr, 'H');
-        parsingContext.state = HttpRequestLineParsingState::HTTP_VERSION_HT;
-        break;
-      case HttpRequestLineParsingState::HTTP_VERSION_HT:
-        _expect(parsingContext.chr, 'T');
-        parsingContext.state = HttpRequestLineParsingState::HTTP_VERSION_HTT;
-        break;
-      case HttpRequestLineParsingState::HTTP_VERSION_HTT:
-        _expect(parsingContext.chr, 'T');
-        parsingContext.state = HttpRequestLineParsingState::HTTP_VERSION_HTTP;
-        break;
-      case HttpRequestLineParsingState::HTTP_VERSION_HTTP:
-        _expect(parsingContext.chr, 'P');
-        parsingContext.state = HttpRequestLineParsingState::HTTP_VERSION_SLASH;
-        break;
-      case HttpRequestLineParsingState::HTTP_VERSION_SLASH:
-        _expect(parsingContext.chr, '/');
-        parsingContext.state =
-            HttpRequestLineParsingState::HTTP_VERSION_MAJOR_START;
-        break;
-      case HttpRequestLineParsingState::HTTP_VERSION_MAJOR_START:
-        _expectDigit(parsingContext.chr);
-        _updateVersion(parsingContext.major, parsingContext.chr);
-        parsingContext.state = HttpRequestLineParsingState::HTTP_VERSION_MAJOR;
-        break;
-      case HttpRequestLineParsingState::HTTP_VERSION_MAJOR:
-        _parseHttpVersionMajor(parsingContext, requestLine);
-        break;
-      case HttpRequestLineParsingState::HTTP_VERSION_DOT:
-        _expectDigit(parsingContext.chr);
-      case HttpRequestLineParsingState::HTTP_VERSION_MINOR:
-        _updateVersion(parsingContext.minor, parsingContext.chr);
-        parsingContext.state = HttpRequestLineParsingState::END_OF_HTTP_VERSION;
-        break;
-      case HttpRequestLineParsingState::END_OF_HTTP_VERSION:
-        if (_isEndOfLine(parsingContext, requestLine)) {
-          break;
-        }
-        parsingContext.state =
-            HttpRequestLineParsingState::SPACES_AFTER_VERSION;
-        break;
-      case HttpRequestLineParsingState::SPACES_AFTER_VERSION:
-        if (_isSpaceOrTab(parsingContext.chr)) {
-          break;
-        }
-
-        throw std::runtime_error("invalid characters after version");
-    }
+    _processRequestLineChar(parsingContext, requestLine, outRequest);
   }
 
   outRequest.httpVersion = _getHttpVersion(parsingContext);
 }
 
-inline StepResult HttpParser::_parseMethod(
+INLINE void HttpParser::_processRequestLineChar(
+    ParsingContext<HttpRequestLineParsingState> &parsingContext,
+    const std::string_view requestLine, HttpRequest &outRequest) {
+  switch (parsingContext.state) {
+    case HttpRequestLineParsingState::METHOD:
+      if (_parseMethod(parsingContext, requestLine, outRequest) ==
+          StepResult::BREAK) {
+        break;
+      }
+    case HttpRequestLineParsingState::SPACES_AFTER_METHOD:
+      if (_parseSpacesAfterMethod(parsingContext) == StepResult::BREAK) {
+        break;
+      }
+    case HttpRequestLineParsingState::URI:
+      if (_parseUri(parsingContext, outRequest) == StepResult::BREAK) {
+        break;
+      }
+    case HttpRequestLineParsingState::SPACES_AFTER_URI:
+      if (_isSpaceOrTab(parsingContext.chr)) {
+        break;
+      }
+    case HttpRequestLineParsingState::HTTP_VERSION_H:
+      _expect(parsingContext.chr, 'H');
+      parsingContext.state = HttpRequestLineParsingState::HTTP_VERSION_HT;
+      break;
+    case HttpRequestLineParsingState::HTTP_VERSION_HT:
+      _expect(parsingContext.chr, 'T');
+      parsingContext.state = HttpRequestLineParsingState::HTTP_VERSION_HTT;
+      break;
+    case HttpRequestLineParsingState::HTTP_VERSION_HTT:
+      _expect(parsingContext.chr, 'T');
+      parsingContext.state = HttpRequestLineParsingState::HTTP_VERSION_HTTP;
+      break;
+    case HttpRequestLineParsingState::HTTP_VERSION_HTTP:
+      _expect(parsingContext.chr, 'P');
+      parsingContext.state = HttpRequestLineParsingState::HTTP_VERSION_SLASH;
+      break;
+    case HttpRequestLineParsingState::HTTP_VERSION_SLASH:
+      _expect(parsingContext.chr, '/');
+      parsingContext.state =
+          HttpRequestLineParsingState::HTTP_VERSION_MAJOR_START;
+      break;
+    case HttpRequestLineParsingState::HTTP_VERSION_MAJOR_START:
+      _expectDigit(parsingContext.chr);
+      _updateVersion(parsingContext.major, parsingContext.chr);
+      parsingContext.state = HttpRequestLineParsingState::HTTP_VERSION_MAJOR;
+      break;
+    case HttpRequestLineParsingState::HTTP_VERSION_MAJOR:
+      _parseHttpVersionMajor(parsingContext, requestLine);
+      break;
+    case HttpRequestLineParsingState::HTTP_VERSION_DOT:
+      _expectDigit(parsingContext.chr);
+    case HttpRequestLineParsingState::HTTP_VERSION_MINOR:
+      _updateVersion(parsingContext.minor, parsingContext.chr);
+      parsingContext.state = HttpRequestLineParsingState::END_OF_HTTP_VERSION;
+      break;
+    case HttpRequestLineParsingState::END_OF_HTTP_VERSION:
+      if (_isEndOfLine(parsingContext, requestLine)) {
+        break;
+      }
+      parsingContext.state = HttpRequestLineParsingState::SPACES_AFTER_VERSION;
+      break;
+    case HttpRequestLineParsingState::SPACES_AFTER_VERSION:
+      if (_isSpaceOrTab(parsingContext.chr)) {
+        break;
+      }
+
+      throw std::runtime_error("invalid characters after version");
+  }
+}
+
+INLINE StepResult HttpParser::_parseMethod(
     ParsingContext<HttpRequestLineParsingState> &parsingContext,
     const std::string_view requestLine, HttpRequest &outRequest) {
   if (_isEndOfLine(parsingContext, requestLine)) {
@@ -178,7 +200,7 @@ inline StepResult HttpParser::_parseMethod(
   return StepResult::BREAK;
 }
 
-inline StepResult HttpParser::_parseSpacesAfterMethod(
+INLINE StepResult HttpParser::_parseSpacesAfterMethod(
     ParsingContext<HttpRequestLineParsingState> &parsingContext) {
   if (_isSpaceOrTab(parsingContext.chr)) {
     return StepResult::BREAK;
@@ -188,7 +210,7 @@ inline StepResult HttpParser::_parseSpacesAfterMethod(
   return StepResult::CONTINUE;
 }
 
-inline StepResult HttpParser::_parseUri(
+INLINE StepResult HttpParser::_parseUri(
     ParsingContext<HttpRequestLineParsingState> &parsingContext,
     HttpRequest &outRequest) {
   if (_isSpaceOrTab(parsingContext.chr)) {
@@ -196,7 +218,7 @@ inline StepResult HttpParser::_parseUri(
     return StepResult::BREAK;
   }
 
-  if (!getSymbolsAllowedInURI().contains(parsingContext.chr)) {
+  if (!uriSymbolsTable[static_cast<uint8_t>(parsingContext.chr)]) {
     throw std::runtime_error("invalid character in uri");
   }
 
@@ -205,7 +227,7 @@ inline StepResult HttpParser::_parseUri(
   return StepResult::BREAK;
 }
 
-inline StepResult HttpParser::_parseHttpVersionMajor(
+INLINE StepResult HttpParser::_parseHttpVersionMajor(
     ParsingContext<HttpRequestLineParsingState> &parsingContext,
     const std::string_view requestLine) {
   if (parsingContext.chr == '.') {
@@ -222,11 +244,11 @@ inline StepResult HttpParser::_parseHttpVersionMajor(
   return StepResult::BREAK;
 }
 
-inline void HttpParser::_updateVersion(int &version, const char chr) {
+INLINE void HttpParser::_updateVersion(int &version, const char chr) {
   version = (version * 10) + (chr - '0');
 }
 
-inline HttpVersion HttpParser::_getHttpVersion(
+INLINE HttpVersion HttpParser::_getHttpVersion(
     const ParsingContext<HttpRequestLineParsingState> &parsingContext) {
   if (parsingContext.major == 0 && parsingContext.minor == 9) {
     return HttpVersion::HTTP_0_9;
@@ -247,31 +269,36 @@ inline HttpVersion HttpParser::_getHttpVersion(
   throw std::runtime_error("invalid HTTP version");
 }
 
-inline void HttpParser::_expect(const char realChar, const char expected) {
+INLINE void HttpParser::_expect(const char realChar, const char expected) {
   if (realChar != expected) {
     throw std::runtime_error(
         fmt::format("expected '{}' but got '{}'", expected, realChar));
   }
 }
 
-inline void HttpParser::_expectDigit(char chr) {
+INLINE void HttpParser::_expectDigit(char chr) {
   if (chr < '0' || chr > '9') {
     throw std::runtime_error(fmt::format("expected digit but got '{}'", chr));
   }
 }
 
-inline bool HttpParser::_isSpaceOrTab(const char chr) {
+INLINE bool HttpParser::_isSpaceOrTab(const char chr) {
   return chr == ' ' || chr == '\t';
 }
 
-inline bool HttpParser::_isAsciiUppercase(const char chr) {
+INLINE bool HttpParser::_isAsciiUppercase(const char chr) {
   return chr >= 'A' && chr <= 'Z';
 }
 
-inline bool HttpParser::_isEndOfLine(
+INLINE bool HttpParser::_isEndOfLine(
     const ParsingContext<HttpRequestLineParsingState> &parsingContext,
     const std::string_view requestLine) {
-  return parsingContext.chrIdx == requestLine.size() - 1;
+  if (parsingContext.chrIdx == requestLine.size() - 1) {
+    std::cout << "chr: " << parsingContext.chr << '\n';
+    return true;
+  }
+
+  return false;
 }
 
 enum class HttpHeadersParsingState : std::uint8_t {
@@ -348,7 +375,7 @@ void HttpParser::_parseHeaders(HttpRequest &outRequest) {
   }
 }
 
-inline std::pair<std::size_t, std::size_t> HttpParser::_getHeaders() const {
+INLINE std::pair<std::size_t, std::size_t> HttpParser::_getHeaders() const {
   auto start = _request.find(kCRLF);
   if (start == std::string::npos) {
     throw std::runtime_error("Malformed HTTP request: missing CRLF");

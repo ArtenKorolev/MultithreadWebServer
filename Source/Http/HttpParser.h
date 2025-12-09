@@ -23,6 +23,9 @@ class HttpParser {
 
  private:
   void _parseRequestLine(HttpRequest &outRequest) const;
+  static void _processRequestLineChar(
+      ParsingContext<HttpRequestLineParsingState> &parsingContext,
+      std::string_view requestLine, HttpRequest &outRequest);
   void _parseHeaders(HttpRequest &outRequest);
   void _parseBody(HttpRequest &outRequest) const;
   [[nodiscard]] std::pair<std::size_t, std::size_t> _getHeaders() const;

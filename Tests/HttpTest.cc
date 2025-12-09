@@ -120,10 +120,12 @@ TEST(HttpParserTest, HandlesHttp10Request) {
 }
 
 TEST(HttpParserTest, ThrowsOnMalformedRequestLine) {
-  const std::string rawRequest = "BADREQUEST\r\nHost: x\r\n\r\n";
+  const std::vector<std::string> badRequests = {"BADREQUEST\r\nHost: x\r\n\r\n",
+                                                "GET / \r\nHost: x\r\n\r\n",
+                                                "POST\r\nHost: x\r\n\r\n"};
 
-  EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(),
-               std::runtime_error);
+  for (const auto req : badRequests)
+    EXPECT_THROW(const auto t = HttpParser{req}.parse(), std::runtime_error);
 }
 
 TEST(HttpParserTest, ThrowsOnInvalidMethod) {
@@ -242,11 +244,13 @@ TEST(HttpParserTest, AllHttpVersions) {
 
 TEST(HttpParserTest, MalformedHttpVersion) {
   const std::vector<std::string> badVersions = {
-      "HTTP/0",       "HTTP/1.",    "HTTP/",     "HTTP/.",    "HTTP/.1",
-      "HTTP/111.111", "HTTP/1.1.1", "HTTP/ 1.1", "HTTTP/1.1", "HTTP/.9", "HTTP/0.  "};
+      "HTTP/0",    "HTTP/1.",      "HTTP/",      "HTTP/.",
+      "HTTP/.1",   "HTTP/111.111", "HTTP/1.1.1", "HTTP/ 1.1",
+      "HTTTP/1.1", "HTTP/.9",      "HTTP/0.  "};
 
   for (const auto& v : badVersions) {
     const std::string rawRequest = "GET / " + v + "\r\nHost: localhost\r\n\r\n";
+    std::cout << v << '\n';
     EXPECT_THROW(const auto t = HttpParser{rawRequest}.parse(),
                  std::runtime_error);
   }
