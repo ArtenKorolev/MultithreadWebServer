@@ -135,7 +135,6 @@ TEST(HttpParserTest, ThrowsOnInvalidMethod) {
                std::out_of_range);
 }
 
-// Заголовок без значения
 TEST(HttpParserTest, HeaderWithoutValue) {
   const std::string rawRequest =
       "GET / HTTP/1.1\r\n"
@@ -149,7 +148,6 @@ TEST(HttpParserTest, HeaderWithoutValue) {
   EXPECT_EQ(req.headers.at("host"), "localhost");
 }
 
-// Заголовки с табуляциями
 TEST(HttpParserTest, HeaderWithTabsAroundColon) {
   const std::string rawRequest =
       "GET / HTTP/1.1\r\n"
@@ -163,7 +161,6 @@ TEST(HttpParserTest, HeaderWithTabsAroundColon) {
   EXPECT_EQ(req.headers.at("user-agent"), "curl/7.68.0");
 }
 
-// Очень длинный заголовок
 TEST(HttpParserTest, LongHeaderValue) {
   std::string longValue(10000, 'x');
   const std::string rawRequest =
@@ -188,7 +185,6 @@ TEST(HttpParserTest, LastHeaderWithoutTrailingCRLF) {
                std::runtime_error);
 }
 
-// Дублирующиеся заголовки
 TEST(HttpParserTest, DuplicateHeaders) {
   const std::string rawRequest =
       "GET / HTTP/1.1\r\n"
@@ -198,11 +194,9 @@ TEST(HttpParserTest, DuplicateHeaders) {
 
   const HttpRequest req = HttpParser{rawRequest}.parse();
 
-  // В твоей реализации последний должен перезаписать первый
   EXPECT_EQ(req.headers.at("x-test"), "two");
 }
 
-// Заголовок с пробелами в имени (некорректный)
 TEST(HttpParserTest, HeaderNameWithSpaces) {
   const std::string rawRequest =
       "GET / HTTP/1.1\r\n"
@@ -213,7 +207,6 @@ TEST(HttpParserTest, HeaderNameWithSpaces) {
                std::runtime_error);
 }
 
-// Заголовок с пустым запросом
 TEST(HttpParserTest, EmptyRequest) {
   const std::string rawRequest = "";
 
@@ -221,7 +214,6 @@ TEST(HttpParserTest, EmptyRequest) {
                std::runtime_error);
 }
 
-// Проверка разных кейсов HTTP версии
 TEST(HttpParserTest, AllHttpVersions) {
   const std::array<std::string, 5> versions = {"HTTP/0.9", "HTTP/1.0",
                                                "HTTP/1.1", "HTTP/2", "HTTP/3"};
