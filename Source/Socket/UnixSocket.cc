@@ -168,6 +168,7 @@ void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
   off_t offset = 0;
   off_t remaining = stats.st_size;
 
+#if defined(__APPLE__) && defined(__MACH__)
   while (remaining > 0) {
     off_t toSend = remaining;
 
@@ -181,6 +182,21 @@ void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
     offset += toSend;
     remaining -= toSend;
   }
+
+#elif defined(__linux__)
+  while (remaining > 0) {
+    const ssize_t sent = sendfile(_socketFd, fileFd, &offset, remaining);
+
+    if (sent == -1) {
+      close(fileFd);
+      throw std::runtime_error("sendfile() failed");
+    }
+
+    remaining -= sent;
+  }
+#else
+  #error "Unsupported UNIX platform"
+#endif
 
   close(fileFd);
 }
