@@ -3,12 +3,15 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <sys/fcntl.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include <array>
 #include <cstring>
+#include <filesystem>
 #include <memory>
 #include <stdexcept>
 
@@ -144,6 +147,42 @@ std::string UnixSocket::receive() {
   }
 
   return received;
+}
+
+void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
+  if (filePath.empty()) {
+    throw std::runtime_error("Empty file path");
+  }
+
+  const int fileFd = open(filePath.c_str(), O_RDONLY);
+  if (fileFd < 0) {
+    throw std::runtime_error("Failed to open file");
+  }
+
+  struct stat stats{};
+  if (fstat(fileFd, &stats) < 0) {
+    close(fileFd);
+    throw std::runtime_error("Failed to stat file");
+  }
+
+  off_t offset = 0;
+  off_t remaining = stats.st_size;
+
+  while (remaining > 0) {
+    off_t toSend = remaining;
+
+    const int result = sendfile(fileFd, _socketFd, offset, &toSend, nullptr, 0);
+
+    if (result < 0) {
+      close(fileFd);
+      throw std::runtime_error("sendfile() failed");
+    }
+
+    offset += toSend;
+    remaining -= toSend;
+  }
+
+  close(fileFd);
 }
 
 }  // namespace webserver::net

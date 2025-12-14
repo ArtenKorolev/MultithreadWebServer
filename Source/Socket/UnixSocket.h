@@ -22,12 +22,12 @@ class UnixSocket final : public ISocket {
   void listen() override;
   void send(const std::string &data) override;
   std::string receive() override;
+  void sendZeroCopyFile(std::filesystem::path filePath) override;
 
  private:
   explicit UnixSocket(int fileDescriptor);
 
-  [[nodiscard]] static bool _isValidFileDescriptor(
-      int fileDescriptor) noexcept;
+  [[nodiscard]] static bool _isValidFileDescriptor(int fileDescriptor) noexcept;
   [[nodiscard]] static struct addrinfo *_resolveHostDataToAddressInfo(
       const HostData &hostData);
   [[nodiscard]] static struct sockaddr_in _buildLocalAddressByPort(

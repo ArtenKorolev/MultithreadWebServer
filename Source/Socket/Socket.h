@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -22,6 +23,7 @@ class ISocket {
   virtual void listen() = 0;
   virtual void send(const std::string &data) = 0;
   [[nodiscard]] virtual std::string receive() = 0;
+  virtual void sendZeroCopyFile(std::filesystem::path filePath) = 0;
 };
 
 }  // namespace webserver::net

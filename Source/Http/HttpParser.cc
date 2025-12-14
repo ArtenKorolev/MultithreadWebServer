@@ -40,9 +40,9 @@ static constexpr std::array<bool, kUriTableSize> makeUriSymbolsTable() {
     uriTable.at(chrCode) = true;
   }
 
-  const std::array<char, 19> specials = {'-',  '.', '_', '~', '!', '$', '&',
-                                         '\'', '(', ')', '*', '+', ',', ';',
-                                         '=',  ':', '@', '/', '?'};
+  constexpr std::array<char, 19> specials = {'-',  '.', '_', '~', '!', '$', '&',
+                                             '\'', '(', ')', '*', '+', ',', ';',
+                                             '=',  ':', '@', '/', '?'};
 
   for (char specialChr : specials) {
     uriTable.at(specialChr) = true;

@@ -22,7 +22,7 @@ class HttpServer {
   [[noreturn]] void startServerLoop();
 
  private:
-  static void _serveClient(const std::unique_ptr<ISocket> &clientSocket);
+  static void _serveClient(std::unique_ptr<ISocket> clientSocket);
   void _throwIfPortIsInvalid() const;
 
   core::ThreadPool _threadPool;

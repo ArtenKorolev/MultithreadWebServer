@@ -1,25 +1,23 @@
 #pragma once
 
+#include <expected>
 #include <filesystem>
 
-#include "HttpRequest.h"
+#include "HttpBase.h"
 #include "HttpResponse.h"
+#include "Socket.h"
 
 namespace webserver::http {
 
 class StaticFileHandler {
  public:
-  explicit StaticFileHandler(HttpRequest request)
-      : _request{std::move(request)} {};
-
-  [[nodiscard]] HttpResponse handle() const;
+  [[nodiscard]] static std::expected<void, HttpError> handle(
+      net::ISocket &clientSocket);
 
  private:
-  [[nodiscard]] static bool _containsTwoDotsPattern(const std::string& uri);
+  [[nodiscard]] static bool _containsTwoDotsPattern(const std::string &uri);
   [[nodiscard]] static std::string _getMimeTypeByFileName(
-      const std::filesystem::path& fileName);
-
-  HttpRequest _request;
+      const std::filesystem::path &fileName);
 };
 
 }  // namespace webserver::http

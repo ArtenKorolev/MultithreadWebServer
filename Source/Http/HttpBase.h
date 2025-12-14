@@ -64,7 +64,8 @@ struct StatusCodeHash {
 using CodeToReasonMapType =
     std::unordered_map<StatusCode, std::string_view, StatusCodeHash>;
 
-#define X(numCode, status, reasonPhrase) {StatusCode::HTTP_##numCode##_##status, reasonPhrase},
+#define X(numCode, status, reasonPhrase) \
+  {StatusCode::HTTP_##numCode##_##status, reasonPhrase},
 inline CodeToReasonMapType getStatusCodeToReasonPhraseMap() {
   static const CodeToReasonMapType statusCodeToReason = {
       LIST_OF_HTTP_STATUS_CODES};

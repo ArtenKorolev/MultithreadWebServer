@@ -1,50 +1,44 @@
 #include "StaticFileHandler.h"
 
-#include <fstream>
-#include <iostream>
-#include <sstream>
+#include <expected>
+
+#include "HttpBase.h"
+#include "HttpParser.h"
+#include "HttpResponse.h"
+#include "Socket.h"
 
 namespace webserver::http {
 
-HttpResponse StaticFileHandler::handle() const {
-  HeadersType headers = {{"Server", "webserver"}, {"Connection", "close"}};
+[[nodiscard]] std::expected<void, HttpError> StaticFileHandler::handle(
+    net::ISocket& clientSocket) {
+  const auto requestRaw = clientSocket.receive();
+  const auto request = HttpParser{requestRaw}.parse();
 
-  if (_containsTwoDotsPattern(_request.uri)) {
-    return HttpResponse{
-        .statusCode = StatusCode::HTTP_400_BAD_REQUEST,
-        .body = "Unsafe pattern found in uri: '..'",
-        .headers = headers,
-    };
+  const std::filesystem::path fullPath = "public/" + request.uri;
+
+  if (_containsTwoDotsPattern(fullPath)) {
+    return std::unexpected<HttpError>{
+        {.statusCode = StatusCode::HTTP_400_BAD_REQUEST,
+         .message = "Preventing traversal path: '..' found in URI"}};
   }
 
-  const std::filesystem::path fullFilePath = "public/" + _request.uri;
-
-  const auto isPathCorrect = std::filesystem::exists(fullFilePath) &&
-                             std::filesystem::is_regular_file(fullFilePath);
-
-  if (!isPathCorrect) {
-    return HttpResponse{.statusCode = StatusCode::HTTP_404_NOT_FOUND,
-                        .body = "Requested file not found",
-                        .headers = headers};
+  if (!std::filesystem::exists(fullPath) ||
+      !std::filesystem::is_regular_file(fullPath)) {
+    return std::unexpected<HttpError>{
+        {.statusCode = StatusCode::HTTP_404_NOT_FOUND}};
   }
 
-  const std::ifstream fileStream{fullFilePath};
+  const auto response = HttpResponse{
+      .statusCode = StatusCode::HTTP_200_OK,
+      .headers = {{"Content-Type", _getMimeTypeByFileName(fullPath)},
+                  {"Content-Length",
+                   std::to_string(std::filesystem::file_size(fullPath))},
+                  {"Connection", "close"}}};
 
-  if (!fileStream.is_open()) {
-    return HttpResponse{
-        .statusCode = StatusCode::HTTP_500_INTERNAL_SERVER_ERROR,
-        .body = "Cannot open file",
-        .headers = headers};
-  }
+  clientSocket.send(response.serialize());
+  clientSocket.sendZeroCopyFile(fullPath);
 
-  std::stringstream stringStream;
-  stringStream << fileStream.rdbuf();
-
-  headers["Content-Type"] = _getMimeTypeByFileName(fullFilePath);
-
-  return HttpResponse{.statusCode = StatusCode::HTTP_200_OK,
-                      .body = stringStream.str(),
-                      .headers = headers};
+  return {};
 }
 
 inline bool StaticFileHandler::_containsTwoDotsPattern(const std::string& uri) {

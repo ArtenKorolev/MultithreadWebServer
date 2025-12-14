@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 
-#include "HttpParser.h"
 #include "HttpResponse.h"
 #include "SocketFactory.h"
 #include "StaticFileHandler.h"
@@ -32,21 +31,18 @@ void HttpServer::startServerLoop() {
   while (true) {
     auto clientSocket{_serverSocket->accept()};
 
-    _threadPool.enqueue(
-        [client = std::move(clientSocket)]() mutable { _serveClient(client); });
+    _threadPool.enqueue([client = std::move(clientSocket)]() mutable {
+      _serveClient(std::move(client));
+    });
   }
 }
 
-void HttpServer::_serveClient(const std::unique_ptr<ISocket>& clientSocket) {
-  try {
-    const auto requestObject{HttpParser{clientSocket->receive()}.parse()};
-    const StaticFileHandler responseBuilder{requestObject};
-    const auto response = responseBuilder.handle();
-    clientSocket->send(response.toString());
-  } catch (const std::exception& e) {
-    const auto response = HttpResponse{
-        .statusCode = StatusCode::HTTP_400_BAD_REQUEST, .body = e.what()};
-    clientSocket->send(response.toString());
+void HttpServer::_serveClient(std::unique_ptr<ISocket> clientSocket) {
+  const auto handleResult = StaticFileHandler::handle(*clientSocket);
+
+  if (!handleResult.has_value()) {
+    const auto response = HttpResponse::fromError(handleResult.error());
+    clientSocket->send(response.serialize());
   }
 }
 

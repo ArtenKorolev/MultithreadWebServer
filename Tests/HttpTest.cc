@@ -13,7 +13,7 @@ TEST(HttpResponseTest, ToStringGeneratesCorrectHttpResponse) {
   response.headers["Content-Length"] = "13";
   response.body = "Hello, world!";
 
-  std::string result = response.toString();
+  std::string result = response.serialize();
 
   EXPECT_NE(result.find("HTTP/1.1 200 OK\r\n"), std::string::npos);
   EXPECT_NE(result.find("Content-Type: text/html\r\n"), std::string::npos);

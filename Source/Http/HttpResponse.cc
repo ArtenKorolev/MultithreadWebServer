@@ -6,9 +6,9 @@
 
 namespace webserver::http {
 
-std::string HttpResponse::toString() const {
+std::string HttpResponse::serialize() const {
   return fmt::format("{}\r\n{}\r\n{}", _generateStatusLine(),
-                     _generateHeadersString(), body);
+                     _generateHeadersString(), body.value_or(""));
 }
 
 std::string HttpResponse::_generateStatusLine() const {
@@ -20,7 +20,6 @@ std::string HttpResponse::_generateStatusLine() const {
 std::string HttpResponse::_generateHeadersString() const {
   std::string headersString;
 
-  _addHeader(headersString, "Content-Length", std::to_string(body.size()));
   _addHeader(headersString, "Date", utils::getCurrentDate());
 
   for (const auto& [header, value] : headers) {
