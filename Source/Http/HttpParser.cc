@@ -23,31 +23,36 @@ HttpRequest HttpParser::parse() {
   return result;
 }
 
-static constexpr std::array<bool, 256> makeUriSymbolsTable() {
-  std::array<bool, 256> uriTable{};
+constexpr auto kUriTableSize = 256;
+
+static constexpr std::array<bool, kUriTableSize> makeUriSymbolsTable() {
+  std::array<bool, kUriTableSize> uriTable{};
 
   for (int chrCode = 'A'; chrCode <= 'Z'; ++chrCode) {
-    uriTable[chrCode] = true;
+    uriTable.at(chrCode) = true;
   }
 
   for (int chrCode = 'a'; chrCode <= 'z'; ++chrCode) {
-    uriTable[chrCode] = true;
+    uriTable.at(chrCode) = true;
   }
 
   for (int chrCode = '0'; chrCode <= '9'; ++chrCode) {
-    uriTable[chrCode] = true;
+    uriTable.at(chrCode) = true;
   }
 
-  const char specials[] = {'-', '.', '_', '~', '!', '$', '&', '\'', '(', ')',
-                           '*', '+', ',', ';', '=', ':', '@', '/',  '?'};
+  const std::array<char, 19> specials = {'-',  '.', '_', '~', '!', '$', '&',
+                                         '\'', '(', ')', '*', '+', ',', ';',
+                                         '=',  ':', '@', '/', '?'};
+
   for (char specialChr : specials) {
-    uriTable[static_cast<unsigned char>(specialChr)] = true;
+    uriTable.at(specialChr) = true;
   }
 
   return uriTable;
 }
 
-static constexpr std::array<bool, 256> uriSymbolsTable = makeUriSymbolsTable();
+static constexpr std::array<bool, kUriTableSize> uriSymbolsTable =
+    makeUriSymbolsTable();
 
 template <typename State>
 struct ParsingContext {
@@ -217,7 +222,7 @@ INLINE StepResult HttpParser::_parseUri(
     return StepResult::BREAK;
   }
 
-  if (!uriSymbolsTable[static_cast<uint8_t>(parsingContext.chr)]) {
+  if (!uriSymbolsTable.at(parsingContext.chr)) {
     throw std::runtime_error("invalid character in uri");
   }
 
@@ -244,12 +249,12 @@ INLINE StepResult HttpParser::_parseHttpVersionMajor(
 }
 
 INLINE void HttpParser::_updateVersion(int &version, const char chr) {
-  version = (version * 10) + (chr - '0');
+  version = (version * 10) + (chr - '0');  // NOLINT
 }
 
 INLINE HttpVersion HttpParser::_getHttpVersion(
     const ParsingContext<HttpRequestLineParsingState> &parsingContext) {
-  if (parsingContext.major == 0 && parsingContext.minor == 9) {
+  if (parsingContext.major == 0 && parsingContext.minor == 9) {  // NOLINT
     return HttpVersion::HTTP_0_9;
   }
   if (parsingContext.major == 1 && parsingContext.minor == 0) {
