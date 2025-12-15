@@ -1,5 +1,7 @@
 #pragma once
 
+// necessary on linux
+#include <cstdint> // NOLINT
 #include <string>
 #include <unordered_map>
 

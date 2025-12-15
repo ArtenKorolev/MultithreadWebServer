@@ -7,6 +7,11 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#if defined(__linux__)
+  #include <sys/sendfile.h>
+#endif
+
 #include <unistd.h>
 
 #include <array>
@@ -185,7 +190,7 @@ void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
 
 #elif defined(__linux__)
   while (remaining > 0) {
-    const ssize_t sent = sendfile(_socketFd, fileFd, &offset, remaining);
+    const ssize_t sent = ::sendfile(_socketFd, fileFd, &offset, remaining);
 
     if (sent == -1) {
       close(fileFd);
