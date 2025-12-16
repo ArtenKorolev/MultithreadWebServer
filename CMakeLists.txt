@@ -22,6 +22,7 @@ file(GLOB CPP_SOURCES
         "Source/ThreadPool/*.cc"
         "Source/Http/*.cc"
         "Source/Utils/*.cc"
+        "Source/Signals/*.cc"
 )
 
 
@@ -41,6 +42,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         Source/ThreadPool
         Source/Http
         Source/Utils
+        Source/Signals
 )
 
 # =============== TESTS ===============

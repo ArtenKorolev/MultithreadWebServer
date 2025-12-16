@@ -5,6 +5,8 @@
 #include "Socket.h"
 #include "ThreadPool.h"
 
+inline std::atomic<bool> shutdownRequested{false};
+
 namespace webserver::net {
 
 constexpr auto kDefaultPort = 8000;
@@ -19,7 +21,7 @@ class HttpServer {
   HttpServer &operator=(HttpServer &&) = delete;
   ~HttpServer() = default;
 
-  [[noreturn]] void startServerLoop();
+  void startServerLoop();
 
  private:
   static void _serveClient(std::unique_ptr<ISocket> clientSocket);

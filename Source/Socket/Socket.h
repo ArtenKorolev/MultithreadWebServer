@@ -24,6 +24,7 @@ class ISocket {
   virtual void send(const std::string &data) = 0;
   [[nodiscard]] virtual std::string receive() = 0;
   virtual void sendZeroCopyFile(std::filesystem::path filePath) = 0;
+  virtual void close() = 0;
 };
 
 }  // namespace webserver::net

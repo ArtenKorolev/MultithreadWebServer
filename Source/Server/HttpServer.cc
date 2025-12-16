@@ -26,15 +26,31 @@ void HttpServer::_throwIfPortIsInvalid() const {
 }
 
 void HttpServer::startServerLoop() {
+  shutdownRequested.store(false);
   _serverSocket->listen();
 
-  while (true) {
-    auto clientSocket{_serverSocket->accept()};
+  while (!shutdownRequested.load()) {
+    try {
+      auto clientSocket{_serverSocket->accept()};
 
-    _threadPool.enqueue([client = std::move(clientSocket)]() mutable {
-      _serveClient(std::move(client));
-    });
+      if (shutdownRequested.load()) {
+        break;
+      }
+
+      _threadPool.enqueue([client = std::move(clientSocket)]() mutable {
+        _serveClient(std::move(client));
+      });
+    } catch (const std::exception &e) {
+      if (shutdownRequested.load()) {
+        break;
+      }
+
+      throw;
+    }
   }
+
+  _serverSocket->close();
+  _threadPool.stop();
 }
 
 void HttpServer::_serveClient(std::unique_ptr<ISocket> clientSocket) {

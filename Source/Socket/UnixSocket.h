@@ -23,6 +23,7 @@ class UnixSocket final : public ISocket {
   void send(const std::string &data) override;
   std::string receive() override;
   void sendZeroCopyFile(std::filesystem::path filePath) override;
+  void close() override;
 
  private:
   explicit UnixSocket(int fileDescriptor);

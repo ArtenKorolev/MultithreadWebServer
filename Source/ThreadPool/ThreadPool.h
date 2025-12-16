@@ -22,6 +22,7 @@ const auto kDefaultThreadsCount = getDefaultThreadsCount();
 class ThreadPool {
  public:
   explicit ThreadPool(std::size_t threadsCount = kDefaultThreadsCount);
+
   ThreadPool(const ThreadPool &) = delete;
   ThreadPool(ThreadPool &&) = delete;
   ThreadPool &operator=(const ThreadPool &) = delete;
@@ -49,6 +50,8 @@ class ThreadPool {
     _condition.notify_one();
     return taskPtr->get_future();
   }
+
+  void stop();
 
  private:
   void _worker();

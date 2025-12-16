@@ -11,8 +11,17 @@ ThreadPool::ThreadPool(const std::size_t threadsCount) {
 }
 
 ThreadPool::~ThreadPool() {
+  stop();
+}
+
+void ThreadPool::stop() {
   {
     std::lock_guard<std::mutex> lock{_queueMutex};
+
+    if (_stop) {
+      return;
+    }
+
     _stop = true;
   }
 

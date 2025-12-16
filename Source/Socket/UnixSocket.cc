@@ -52,8 +52,14 @@ bool UnixSocket::_isValidFileDescriptor(const int fileDescriptor) noexcept {
 }
 
 UnixSocket::~UnixSocket() noexcept {
+  close();
+}
+
+void UnixSocket::close() {
   if (_isValidFileDescriptor(_socketFd)) {
-    close(_socketFd);
+    ::close(_socketFd);
+    constexpr auto kInvalidSocketFd = -1;
+    _socketFd = kInvalidSocketFd;
   }
 }
 
@@ -166,7 +172,7 @@ void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
 
   struct stat stats{};
   if (fstat(fileFd, &stats) < 0) {
-    close(fileFd);
+    ::close(fileFd);
     throw std::runtime_error("Failed to stat file");
   }
 
@@ -180,7 +186,7 @@ void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
     const int result = sendfile(fileFd, _socketFd, offset, &toSend, nullptr, 0);
 
     if (result < 0) {
-      close(fileFd);
+      ::close(fileFd);
       throw std::runtime_error("sendfile() failed");
     }
 
@@ -193,7 +199,7 @@ void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
     const ssize_t sent = ::sendfile(_socketFd, fileFd, &offset, remaining);
 
     if (sent == -1) {
-      close(fileFd);
+      ::close(fileFd);
       throw std::runtime_error("sendfile() failed");
     }
 
@@ -203,7 +209,7 @@ void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
   #error "Unsupported UNIX platform"
 #endif
 
-  close(fileFd);
+  ::close(fileFd);
 }
 
 }  // namespace webserver::net

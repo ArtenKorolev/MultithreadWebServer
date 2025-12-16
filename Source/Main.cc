@@ -1,8 +1,11 @@
 #include <print>
 
 #include "HttpServer.h"
+#include "SignalsManager.h"
 
 int main() {
+  webserver::core::SignalsManager::enableAllSignalsHandlers();
+
   try {
     webserver::net::HttpServer server;
     server.startServerLoop();
