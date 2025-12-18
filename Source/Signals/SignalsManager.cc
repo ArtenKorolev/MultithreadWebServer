@@ -3,7 +3,6 @@
 #include <unistd.h>
 
 #include <csignal>
-#include <iostream>
 
 namespace webserver::core {
 
