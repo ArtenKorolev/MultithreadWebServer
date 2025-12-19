@@ -2,8 +2,6 @@
 
 #include <unistd.h>
 
-#include "HttpServer.h"
-
 #if !defined(_POSIX_VERSION)
   #error "Unsupported platform for signals"
 #endif
