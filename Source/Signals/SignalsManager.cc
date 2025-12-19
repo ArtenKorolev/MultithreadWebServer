@@ -9,6 +9,9 @@
 namespace webserver::core {
 
 void SignalsManager::enableAllSignalsHandlers() {
+#ifndef _POSIX_VERSION
+  #error "Unsupported platform for signals"
+#endif
   _enableSigIntHandler();
 }
 

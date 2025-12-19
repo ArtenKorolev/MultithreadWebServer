@@ -8,14 +8,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#if defined(__linux__)
+#ifdef __linux__
   #include <sys/sendfile.h>
 #endif
 
 #include <unistd.h>
 
 #include <array>
-#include <cstring>
 #include <filesystem>
 #include <memory>
 #include <stdexcept>
@@ -194,7 +193,7 @@ void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
     remaining -= toSend;
   }
 
-#elif defined(__linux__)
+#elifdef __linux__
   while (remaining > 0) {
     const ssize_t sent = ::sendfile(_socketFd, fileFd, &offset, remaining);
 
@@ -206,7 +205,7 @@ void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
     remaining -= sent;
   }
 #else
-#error "Unsupported UNIX platform"
+  #error "Unsupported UNIX platform"
 #endif
 
   ::close(fileFd);
