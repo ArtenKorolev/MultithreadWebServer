@@ -19,6 +19,7 @@ FetchContent_MakeAvailable(fmt)
 
 file(GLOB CPP_SOURCES
         "Source/*.cc"
+        "Source/Socket/OS/Unix/*.cc"
         "Source/Socket/*.cc"
         "Source/Server/*.cc"
         "Source/ThreadPool/*.cc"
@@ -38,6 +39,7 @@ endif ()
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
+        Source/Socket/OS/Unix
         Source/Socket
         Source/Server
         Source/ThreadPool

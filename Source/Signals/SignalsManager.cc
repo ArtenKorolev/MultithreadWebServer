@@ -4,6 +4,8 @@
 
 #include <csignal>
 
+#include "HttpServer.h"
+
 namespace webserver::core {
 
 void SignalsManager::enableAllSignalsHandlers() {

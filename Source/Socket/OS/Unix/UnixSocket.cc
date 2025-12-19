@@ -206,7 +206,7 @@ void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
     remaining -= sent;
   }
 #else
-  #error "Unsupported UNIX platform"
+#error "Unsupported UNIX platform"
 #endif
 
   ::close(fileFd);
