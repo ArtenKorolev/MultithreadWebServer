@@ -22,6 +22,11 @@ std::string HttpResponse::_generateHeadersString() const {
 
   _addHeader(headersString, "Date", utils::getCurrentDate());
 
+  if (body.has_value()) {
+    _addHeader(headersString, "Content-Length",
+               std::to_string(body.value().size()));
+  }
+
   for (const auto& [header, value] : headers) {
     _addHeader(headersString, header, value);
   }
