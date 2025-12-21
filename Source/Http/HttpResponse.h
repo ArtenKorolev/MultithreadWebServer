@@ -23,8 +23,6 @@ struct HttpResponse {
 
     if (error.message.has_value()) {
       response.body = error.message.value();
-      response.headers["Content-Length"] =
-          std::to_string(error.message.value().size());
       response.headers["Content-Type"] = "text/plain";
     }
 

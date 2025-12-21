@@ -59,6 +59,7 @@ std::string StaticFileHandler::_getMimeTypeByFileName(
                              {".gif", "image/gif"},
                              {".svg", "image/svg+xml"},
                              {".json", "application/json"},
+                             {".php", "application/x-php"},
                              {".txt", "text/plain"},
                              {".wasm", "application/wasm"}};
 
