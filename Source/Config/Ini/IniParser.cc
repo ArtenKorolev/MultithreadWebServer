@@ -10,10 +10,10 @@ UmapStrStr IniParser::parse() {
   size_t lineStart{0};
 
   while (true) {
-    const auto lineEnd{_input.find('\n', lineStart)};
+    auto lineEnd{_input.find('\n', lineStart)};
 
     if (lineEnd == std::string_view::npos) {
-      break;
+      lineEnd = _input.size();
     }
 
     const auto lineLen{lineEnd - lineStart};
@@ -21,7 +21,7 @@ UmapStrStr IniParser::parse() {
 
     _parseLine(line);
 
-    if (lineEnd == _input.size() - 1) {
+    if (lineEnd == _input.size()) {
       break;
     }
 
