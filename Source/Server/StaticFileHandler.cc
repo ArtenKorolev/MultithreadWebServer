@@ -14,7 +14,7 @@ namespace webserver::http {
   const auto requestRaw = clientSocket.receive();
   const auto request = HttpParser{requestRaw}.parse();
 
-  const std::filesystem::path fullPath = "public/" + request.uri;
+  const auto fullPath = _getFullPath(request.uri);
 
   if (_containsTwoDotsPattern(fullPath)) {
     return std::unexpected<HttpError>{
@@ -39,6 +39,17 @@ namespace webserver::http {
   clientSocket.sendZeroCopyFile(fullPath);
 
   return {};
+}
+
+inline std::filesystem::path StaticFileHandler::_getFullPath(
+    const std::string& uri) {
+  const auto qsMarkPos = uri.find('?');
+
+  // TODO: replace logic of parsing uri into query and params to HttpParser
+  const auto preparedUri =
+      qsMarkPos == std::string::npos ? uri : uri.substr(0, qsMarkPos);
+
+  return "public" + preparedUri;
 }
 
 inline bool StaticFileHandler::_containsTwoDotsPattern(const std::string& uri) {
