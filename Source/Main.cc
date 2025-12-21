@@ -1,13 +1,17 @@
 #include <print>
 
+#include "Config.h"
 #include "HttpServer.h"
 #include "SignalsManager.h"
 
 int main() {
-  webserver::core::SignalsManager::enableAllSignalsHandlers();
+  using namespace webserver;
+
+  core::SignalsManager::enableAllSignalsHandlers();
 
   try {
-    webserver::net::HttpServer server;
+    net::HttpServer server{
+        static_cast<std::uint16_t>(config::Config::getInstance().port)};
     server.startServerLoop();
   } catch (const std::exception &e) {
     std::println("Error: {}", e.what());

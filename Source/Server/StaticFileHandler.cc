@@ -2,6 +2,7 @@
 
 #include <expected>
 
+#include "Config.h"
 #include "HttpBase.h"
 #include "HttpParser.h"
 #include "HttpResponse.h"
@@ -14,7 +15,8 @@ namespace webserver::http {
   const auto requestRaw = clientSocket.receive();
   const auto request = HttpParser{requestRaw}.parse();
 
-  const std::filesystem::path fullPath = "public/" + request.uri;
+  const std::filesystem::path fullPath =
+      config::Config::getInstance().contentDirectory + request.uri;
 
   if (_containsTwoDotsPattern(fullPath)) {
     return std::unexpected<HttpError>{
