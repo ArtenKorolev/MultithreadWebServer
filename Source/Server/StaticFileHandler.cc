@@ -19,7 +19,7 @@ StaticFileHandler::StaticFileHandler(const std::string& contentDirectory)
   const auto requestRaw{clientSocket.receive()};
   const auto request{HttpParser{requestRaw}.parse()};
 
-  const std::filesystem::path fullPath{_contentDirectory + request.uri};
+  const auto fullPath{_getFullPath(request.uri)};
 
   if (_containsTwoDotsPattern(fullPath)) {
     return std::unexpected<HttpError>{
@@ -44,6 +44,17 @@ StaticFileHandler::StaticFileHandler(const std::string& contentDirectory)
   clientSocket.sendZeroCopyFile(fullPath);
 
   return {};
+}
+
+std::filesystem::path StaticFileHandler::_getFullPath(
+    const std::string& uri) const {
+  const auto qsMarkPos = uri.find('?');
+
+  // TODO: replace logic of parsing uri into query and params to HttpParser
+  const auto preparedUri =
+      qsMarkPos == std::string::npos ? uri : uri.substr(0, qsMarkPos);
+
+  return _contentDirectory + preparedUri;
 }
 
 inline bool StaticFileHandler::_containsTwoDotsPattern(const std::string& uri) {
