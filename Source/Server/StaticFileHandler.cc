@@ -2,6 +2,7 @@
 
 #include <expected>
 
+#include "Config.h"
 #include "HttpBase.h"
 #include "HttpParser.h"
 #include "HttpResponse.h"
@@ -9,12 +10,16 @@
 
 namespace webserver::http {
 
-[[nodiscard]] std::expected<void, HttpError> StaticFileHandler::handle(
-    net::ISocket& clientSocket) {
-  const auto requestRaw = clientSocket.receive();
-  const auto request = HttpParser{requestRaw}.parse();
+StaticFileHandler::StaticFileHandler(const std::string& contentDirectory)
+    : _contentDirectory{contentDirectory} {
+}
 
-  const auto fullPath = _getFullPath(request.uri);
+[[nodiscard]] std::expected<void, HttpError> StaticFileHandler::handle(
+    net::ISocket& clientSocket) const {
+  const auto requestRaw{clientSocket.receive()};
+  const auto request{HttpParser{requestRaw}.parse()};
+
+  const std::filesystem::path fullPath{_contentDirectory + request.uri};
 
   if (_containsTwoDotsPattern(fullPath)) {
     return std::unexpected<HttpError>{
@@ -39,17 +44,6 @@ namespace webserver::http {
   clientSocket.sendZeroCopyFile(fullPath);
 
   return {};
-}
-
-inline std::filesystem::path StaticFileHandler::_getFullPath(
-    const std::string& uri) {
-  const auto qsMarkPos = uri.find('?');
-
-  // TODO: replace logic of parsing uri into query and params to HttpParser
-  const auto preparedUri =
-      qsMarkPos == std::string::npos ? uri : uri.substr(0, qsMarkPos);
-
-  return "public" + preparedUri;
 }
 
 inline bool StaticFileHandler::_containsTwoDotsPattern(const std::string& uri) {

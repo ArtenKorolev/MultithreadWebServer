@@ -8,19 +8,20 @@
 
 namespace webserver::net {
 
-constexpr auto kMinPort = 1;
-constexpr auto kMaxPort = 65535;
+constexpr auto kMinPort{1};
+constexpr auto kMaxPort{65535};
 
 using namespace http;
 
-HttpServer::HttpServer(const std::uint16_t port) : _port{port} {
+HttpServer::HttpServer(config::Config config)
+    : _config{std::move(config)}, _threadPool{_config.threadsCount} {
   _throwIfPortIsInvalid();
   _serverSocket = SocketFactory::newSocket();
-  _serverSocket->bind(port);
+  _serverSocket->bind(_config.port);
 }
 
 void HttpServer::_throwIfPortIsInvalid() const {
-  if (_port < kMinPort || _port > kMaxPort) {
+  if (_config.port < kMinPort || _config.port > kMaxPort) {
     throw std::invalid_argument("Port number must be between 1 and 65535.");
   }
 }
@@ -37,7 +38,7 @@ void HttpServer::startServerLoop() {
         break;
       }
 
-      _threadPool.enqueue([client = std::move(clientSocket)]() mutable {
+      _threadPool.enqueue([client = std::move(clientSocket), this]() mutable {
         _serveClient(std::move(client));
       });
     } catch (const std::exception &e) {
@@ -53,11 +54,12 @@ void HttpServer::startServerLoop() {
   _threadPool.stop();
 }
 
-void HttpServer::_serveClient(std::unique_ptr<ISocket> clientSocket) {
-  const auto handleResult = StaticFileHandler::handle(*clientSocket);
+void HttpServer::_serveClient(std::unique_ptr<ISocket> clientSocket) const {
+  const StaticFileHandler handler{_config.contentDirectory};
+  const auto handleResult = handler.handle(*clientSocket);
 
   if (!handleResult.has_value()) {
-    const auto response = HttpResponse::fromError(handleResult.error());
+    const auto response{HttpResponse::fromError(handleResult.error())};
     clientSocket->send(response.serialize());
   }
 }

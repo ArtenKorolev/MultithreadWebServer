@@ -11,14 +11,18 @@ namespace webserver::http {
 
 class StaticFileHandler {
  public:
-  [[nodiscard]] static std::expected<void, HttpError> handle(
-      net::ISocket &clientSocket);
+  explicit StaticFileHandler(const std::string &contentDirectory);
+
+  [[nodiscard]] std::expected<void, HttpError> handle(
+      net::ISocket &clientSocket) const;
 
  private:
   static std::filesystem::path _getFullPath(const std::string &uri);
   [[nodiscard]] static bool _containsTwoDotsPattern(const std::string &uri);
   [[nodiscard]] static std::string _getMimeTypeByFileName(
       const std::filesystem::path &fileName);
+
+  const std::string &_contentDirectory;
 };
 
 }  // namespace webserver::http

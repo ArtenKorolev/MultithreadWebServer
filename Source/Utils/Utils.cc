@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <iomanip>
+#include <thread>
 
 namespace webserver::utils {
 
@@ -33,6 +34,11 @@ std::string trim(std::string str) {
                 .base(),
             str.end());
   return str;
+}
+
+int getNativeThreadsCount() noexcept {
+  const auto count = std::thread::hardware_concurrency();
+  return count == 0 ? 4 : static_cast<int>(count);
 }
 
 }  // namespace webserver::utils

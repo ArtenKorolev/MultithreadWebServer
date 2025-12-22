@@ -26,6 +26,8 @@ file(GLOB CPP_SOURCES
         "Source/Http/*.cc"
         "Source/Utils/*.cc"
         "Source/Signals/*.cc"
+        "Source/Config/Ini/*.cc"
+        "Source/Config/*.cc"
 )
 
 add_executable(${PROJECT_NAME} ${CPP_SOURCES})
@@ -46,6 +48,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         Source/Http
         Source/Utils
         Source/Signals
+        Source/Config
+        Source/Config/Ini
 )
 
 # =============== TESTS ===============
@@ -64,12 +68,17 @@ file(GLOB TESTS_SRC
         "Tests/*.cc"
         "Source/Http/*.cc"
         "Source/Utils/*.cc"
+        "Source/Config/Ini/*.cc"
 )
 
 add_executable(tests ${TESTS_SRC})
 
 target_link_libraries(tests gtest gtest_main fmt::fmt)
 
-target_include_directories(tests PRIVATE Source/Http Source/Utils)
+target_include_directories(tests PRIVATE
+        Source/Http
+        Source/Utils
+        Source/Config/Ini
+        Source/Config)
 
 add_test(NAME WebServerTests COMMAND tests)

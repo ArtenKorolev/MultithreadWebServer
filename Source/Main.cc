@@ -1,13 +1,18 @@
 #include <print>
 
+#include "Config.h"
 #include "HttpServer.h"
 #include "SignalsManager.h"
 
 int main() {
-  webserver::core::SignalsManager::enableAllSignalsHandlers();
+  using namespace webserver;
+
+  core::SignalsManager::enableAllSignalsHandlers();
 
   try {
-    webserver::net::HttpServer server;
+    constexpr auto kDefaultConfigFile{"config.ini"};
+    config::Config serverConfig{kDefaultConfigFile};
+    net::HttpServer server{std::move(serverConfig)};
     server.startServerLoop();
   } catch (const std::exception &e) {
     std::println("Error: {}", e.what());
