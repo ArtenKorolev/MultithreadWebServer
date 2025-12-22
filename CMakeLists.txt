@@ -27,12 +27,10 @@ file(GLOB CPP_SOURCES
         "Source/Utils/*.cc"
         "Source/Signals/*.cc"
         "Source/Config/Ini/*.cc"
+        "Source/Config/*.cc"
 )
 
-add_executable(${PROJECT_NAME} ${CPP_SOURCES}
-        Source/Config/Ini/IniParser.cc
-        Source/Config/Ini/IniParser.h
-        Source/Config/Config.h)
+add_executable(${PROJECT_NAME} ${CPP_SOURCES})
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(${PROJECT_NAME} PRIVATE -g)

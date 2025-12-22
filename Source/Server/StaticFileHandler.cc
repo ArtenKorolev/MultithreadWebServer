@@ -10,13 +10,16 @@
 
 namespace webserver::http {
 
-[[nodiscard]] std::expected<void, HttpError> StaticFileHandler::handle(
-    net::ISocket& clientSocket) {
-  const auto requestRaw = clientSocket.receive();
-  const auto request = HttpParser{requestRaw}.parse();
+StaticFileHandler::StaticFileHandler(const std::string& contentDirectory)
+    : _contentDirectory{contentDirectory} {
+}
 
-  const std::filesystem::path fullPath =
-      config::Config::getInstance().contentDirectory + request.uri;
+[[nodiscard]] std::expected<void, HttpError> StaticFileHandler::handle(
+    net::ISocket& clientSocket) const {
+  const auto requestRaw{clientSocket.receive()};
+  const auto request{HttpParser{requestRaw}.parse()};
+
+  const std::filesystem::path fullPath{_contentDirectory + request.uri};
 
   if (_containsTwoDotsPattern(fullPath)) {
     return std::unexpected<HttpError>{

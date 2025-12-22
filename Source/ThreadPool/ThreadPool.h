@@ -10,21 +10,11 @@
 #include <type_traits>
 #include <vector>
 
-#include "Config.h"
-
 namespace webserver::core {
-
-inline std::size_t getDefaultThreadsCount() noexcept {
-  const auto count = std::thread::hardware_concurrency();
-  return count == 0 ? 4 : count;
-}
-
-const auto kDefaultThreadsCount = getDefaultThreadsCount();
 
 class ThreadPool {
  public:
-  explicit ThreadPool(
-      std::size_t threadsCount = config::Config::getInstance().threadsCount);
+  explicit ThreadPool(int threadsCount);
 
   ThreadPool(const ThreadPool &) = delete;
   ThreadPool(ThreadPool &&) = delete;

@@ -1,53 +1,27 @@
 #pragma once
 
 #include <filesystem>
-#include <fstream>
-#include <sstream>
+#include <optional>
 
-#include "IniParser.h"
-
-constexpr auto kDefaultPort = 8000;
+#include "Utils.h"
 
 namespace webserver::config {
 
+static constexpr auto kDefaultPort{8000};
+static const auto kDefaultThreadsCount{utils::getNativeThreadsCount()};
+static constexpr auto kDefaultContentDirectory{"public"};
+
 class Config {
  public:
-  static Config getInstance() {
-    static auto instance = _fromFile("config.ini");
-    return instance;
-  }
+  explicit Config(const std::filesystem::path& configPath);
 
-  int port{kDefaultPort};
-  std::size_t threadsCount{2};
-  std::string contentDirectory;
+  std::uint16_t port{kDefaultPort};
+  int threadsCount{kDefaultThreadsCount};
+  std::string contentDirectory{kDefaultContentDirectory};
 
  private:
-  static Config _fromFile(const std::filesystem::path& path) {
-    auto configContents{_readFile(path)};
-    core::IniParser iniParser{std::move(configContents)};
-    const auto configMap{iniParser.parse()};
-
-    const Config newConfig{
-        .port = std::stoi(configMap.at("server.port")),
-        .threadsCount = std::stoull(configMap.at("server.workers")),
-        .contentDirectory = configMap.at("server.content_dir")};
-
-    return newConfig;
-  }
-
-  [[nodiscard]] static std::string _readFile(
-      const std::filesystem::path& path) {
-    std::ifstream fileStream{path};
-
-    if (!fileStream.is_open()) {
-      throw std::runtime_error{"Cannot open file"};
-    }
-
-    std::stringstream strStream;
-    strStream << fileStream.rdbuf();
-
-    return strStream.str();
-  }
+  [[nodiscard]] static std::optional<std::string> _readFile(
+      const std::filesystem::path& path);
 };
 
 }  // namespace webserver::config

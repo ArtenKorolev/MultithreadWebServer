@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "Config.h"
 #include "Socket.h"
 #include "ThreadPool.h"
 
@@ -13,7 +14,7 @@ constexpr auto kDefaultPort = 8000;
 
 class HttpServer {
  public:
-  explicit HttpServer(std::uint16_t port = kDefaultPort);
+  explicit HttpServer(config::Config config);
 
   HttpServer(const HttpServer &) = delete;
   HttpServer(HttpServer &&) = delete;
@@ -24,11 +25,11 @@ class HttpServer {
   void startServerLoop();
 
  private:
-  static void _serveClient(std::unique_ptr<ISocket> clientSocket);
+  void _serveClient(std::unique_ptr<ISocket> clientSocket) const;
   void _throwIfPortIsInvalid() const;
 
+  const config::Config _config;
   core::ThreadPool _threadPool;
-  std::uint16_t _port;
   std::unique_ptr<ISocket> _serverSocket;
 };
 

@@ -10,8 +10,9 @@ int main() {
   core::SignalsManager::enableAllSignalsHandlers();
 
   try {
-    net::HttpServer server{
-        static_cast<std::uint16_t>(config::Config::getInstance().port)};
+    constexpr auto kDefaultConfigFile{"config.ini"};
+    config::Config serverConfig{kDefaultConfigFile};
+    net::HttpServer server{std::move(serverConfig)};
     server.startServerLoop();
   } catch (const std::exception &e) {
     std::println("Error: {}", e.what());
