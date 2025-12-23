@@ -21,8 +21,11 @@ class IniParser {
   [[nodiscard]] UmapStrStr parse();
 
  private:
+  [[nodiscard]] std::size_t _calculateLineEnd(std::size_t lineStart);
   void _parseLine(const std::string &line);
   void _parseSection(const std::string &line);
+  static void _throwIfEndOfSectionIsInvalid(std::size_t endOfSection,
+                                            const std::string &line);
   void _parseKeyValuePair(const std::string &line);
 
   std::string _input;

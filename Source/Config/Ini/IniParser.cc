@@ -10,11 +10,7 @@ UmapStrStr IniParser::parse() {
   size_t lineStart{0};
 
   while (true) {
-    auto lineEnd{_input.find('\n', lineStart)};
-
-    if (lineEnd == std::string_view::npos) {
-      lineEnd = _input.size();
-    }
+    const auto lineEnd{_calculateLineEnd(lineStart)};
 
     const auto lineLen{lineEnd - lineStart};
     const auto line{_input.substr(lineStart, lineLen)};
@@ -29,6 +25,16 @@ UmapStrStr IniParser::parse() {
   };
 
   return _parsingContext.configMap;
+}
+
+inline std::size_t IniParser::_calculateLineEnd(const std::size_t lineStart) {
+  auto lineEnd{_input.find('\n', lineStart)};
+
+  if (lineEnd == std::string_view::npos) {
+    lineEnd = _input.size();
+  }
+
+  return lineEnd;
 }
 
 void IniParser::_parseLine(const std::string &line) {
@@ -57,21 +63,26 @@ void IniParser::_parseSection(const std::string &line) {
 
   const auto endOfSection{lineTrimmed.find(']')};
 
-  if (endOfSection == std::string::npos) {
-    throw std::runtime_error("missing ']' in section declaration");
-  }
-
-  if (endOfSection != lineTrimmed.size() - 1) {
-    throw std::runtime_error("unexpected symbols after ']'");
-  }
+  _throwIfEndOfSectionIsInvalid(endOfSection, lineTrimmed);
 
   auto section{utils::trim(lineTrimmed.substr(1, endOfSection - 1))};
 
   if (section.empty()) {
-    throw std::runtime_error("empty section ");
+    throw std::runtime_error("empty section");
   }
 
   _parsingContext.currentSection = std::move(section);
+}
+
+void IniParser::_throwIfEndOfSectionIsInvalid(const std::size_t endOfSection,
+                                              const std::string &line) {
+  if (endOfSection == std::string::npos) {
+    throw std::runtime_error("missing ']' in section declaration");
+  }
+
+  if (endOfSection != line.size() - 1) {
+    throw std::runtime_error("unexpected symbols after ']'");
+  }
 }
 
 void IniParser::_parseKeyValuePair(const std::string &line) {
