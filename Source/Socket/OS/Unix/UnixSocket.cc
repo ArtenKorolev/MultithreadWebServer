@@ -165,7 +165,7 @@ void UnixSocket::sendZeroCopyFile(const std::filesystem::path filePath) {
   }
 
   const int fileFd = open(filePath.c_str(), O_RDONLY);
-  if (fileFd < 0) {
+  if (!_isValidFileDescriptor(fileFd)) {
     throw std::runtime_error("Failed to open file");
   }
 
