@@ -17,7 +17,8 @@ class StaticFileHandler {
       net::ISocket &clientSocket) const;
 
  private:
-  std::filesystem::path _getFullPath(const std::string &uri) const;
+  [[nodiscard]] std::filesystem::path _getFullPath(
+      const std::string &uri) const;
   [[nodiscard]] static bool _containsTwoDotsPattern(const std::string &uri);
   [[nodiscard]] static std::string _getMimeTypeByFileName(
       const std::filesystem::path &fileName);
