@@ -7,3 +7,4 @@ bin/
 .cache/
 .DS_Store
 *.swp
+compile_commands.json
