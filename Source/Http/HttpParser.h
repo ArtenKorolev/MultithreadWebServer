@@ -7,9 +7,8 @@
 namespace webserver::http {
 
 enum class HttpRequestLineParsingState : std::uint8_t;
-
-template <typename State>
-struct ParsingContext;
+struct RequestLineParsingContext;
+struct HeadersParsingContext;
 
 enum class StepResult : std::uint8_t;
 
@@ -19,38 +18,37 @@ class HttpParser {
       : _request{std::move(request)} {
   }
 
-  [[nodiscard]] HttpRequest parse();
+  [[nodiscard]] HttpRequest parse() const;
 
  private:
   void _parseRequestLine(HttpRequest &outRequest) const;
-  static void _processRequestLineChar(
-      ParsingContext<HttpRequestLineParsingState> &parsingContext,
-      std::string_view requestLine, HttpRequest &outRequest);
-  void _parseHeaders(HttpRequest &outRequest);
+  static void _processRequestLineChar(RequestLineParsingContext &parsingContext,
+                                      std::string_view requestLine,
+                                      HttpRequest &outRequest);
+  void _parseHeaders(HttpRequest &outRequest) const;
   void _parseBody(HttpRequest &outRequest) const;
   [[nodiscard]] std::pair<std::size_t, std::size_t> _getHeaders() const;
 
-  static StepResult _parseMethod(
-      ParsingContext<HttpRequestLineParsingState> &parsingContext,
-      std::string_view requestLine, HttpRequest &outRequest);
+  static StepResult _parseMethod(RequestLineParsingContext &parsingContext,
+                                 std::string_view requestLine,
+                                 HttpRequest &outRequest);
   static StepResult _parseSpacesAfterMethod(
-      ParsingContext<HttpRequestLineParsingState> &parsingContext);
-  static StepResult _parseUri(
-      ParsingContext<HttpRequestLineParsingState> &parsingContext,
-      HttpRequest &outRequest);
+      RequestLineParsingContext &parsingContext);
+  static StepResult _parseUri(RequestLineParsingContext &parsingContext,
+                              HttpRequest &outRequest);
   static StepResult _parseHttpVersionMajor(
-      ParsingContext<HttpRequestLineParsingState> &parsingContext,
-      std::string_view requestLine);
+      RequestLineParsingContext &parsingContext, std::string_view requestLine);
   static HttpVersion _getHttpVersion(
-      const ParsingContext<HttpRequestLineParsingState> &parsingContext);
+      const RequestLineParsingContext &parsingContext);
   static void _expect(char realChar, char expected);
   static void _expectDigit(char chr);
   static bool _isSpaceOrTab(char chr);
   static bool _isAsciiUppercase(char chr);
-  static bool _isEndOfLine(
-      const ParsingContext<HttpRequestLineParsingState> &parsingContext,
-      std::string_view requestLine);
+  static bool _isEndOfLine(const RequestLineParsingContext &parsingContext,
+                           std::string_view requestLine);
   static void _updateVersion(int &version, char chr);
+  void _processHeaderChar(HeadersParsingContext &parsingContext,
+                          HttpRequest &outRequest) const;
 
   const std::string _request;
 };

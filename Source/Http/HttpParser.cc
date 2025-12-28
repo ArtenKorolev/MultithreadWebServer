@@ -13,7 +13,7 @@ constexpr std::string_view kDoubleCRLF = "\r\n\r\n";
 
 #define INLINE __attribute__((always_inline)) inline
 
-HttpRequest HttpParser::parse() {
+HttpRequest HttpParser::parse() const {
   HttpRequest result;
 
   _parseRequestLine(result);
@@ -54,14 +54,13 @@ static constexpr std::array<bool, kUriTableSize> makeUriSymbolsTable() {
 static constexpr std::array<bool, kUriTableSize> uriSymbolsTable =
     makeUriSymbolsTable();
 
-template <typename State>
-struct ParsingContext {
-  int chrIdx{};
+struct RequestLineParsingContext {
+  std::size_t chrIdx{};
   int methodEndIndex{};
   int major{};
   int minor{};
   char chr{};
-  State state;
+  HttpRequestLineParsingState state{};
 };
 
 enum class HttpRequestLineParsingState : std::uint8_t {
@@ -97,12 +96,12 @@ void HttpParser::_parseRequestLine(HttpRequest &outRequest) const {
     throw std::runtime_error("empty request line");
   }
 
-  ParsingContext parsingContext{
+  RequestLineParsingContext parsingContext{
       .state = HttpRequestLineParsingState::METHOD,
   };
 
   for (; parsingContext.chrIdx < requestLine.size(); ++parsingContext.chrIdx) {
-    parsingContext.chr = requestLine[parsingContext.chrIdx];
+    parsingContext.chr = requestLine.at(parsingContext.chrIdx);
     _processRequestLineChar(parsingContext, requestLine, outRequest);
   }
 
@@ -110,7 +109,7 @@ void HttpParser::_parseRequestLine(HttpRequest &outRequest) const {
 }
 
 INLINE void HttpParser::_processRequestLineChar(
-    ParsingContext<HttpRequestLineParsingState> &parsingContext,
+    RequestLineParsingContext &parsingContext,
     const std::string_view requestLine, HttpRequest &outRequest) {
   switch (parsingContext.state) {
     case HttpRequestLineParsingState::METHOD:
@@ -181,7 +180,7 @@ INLINE void HttpParser::_processRequestLineChar(
 }
 
 INLINE StepResult HttpParser::_parseMethod(
-    ParsingContext<HttpRequestLineParsingState> &parsingContext,
+    RequestLineParsingContext &parsingContext,
     const std::string_view requestLine, HttpRequest &outRequest) {
   if (_isEndOfLine(parsingContext, requestLine)) {
     throw std::runtime_error("missing uri and version");
@@ -204,8 +203,8 @@ INLINE StepResult HttpParser::_parseMethod(
   return StepResult::BREAK;
 }
 
-INLINE StepResult HttpParser::_parseSpacesAfterMethod(
-    ParsingContext<HttpRequestLineParsingState> &parsingContext) {
+INLINE StepResult
+HttpParser::_parseSpacesAfterMethod(RequestLineParsingContext &parsingContext) {
   if (_isSpaceOrTab(parsingContext.chr)) {
     return StepResult::BREAK;
   }
@@ -215,8 +214,7 @@ INLINE StepResult HttpParser::_parseSpacesAfterMethod(
 }
 
 INLINE StepResult HttpParser::_parseUri(
-    ParsingContext<HttpRequestLineParsingState> &parsingContext,
-    HttpRequest &outRequest) {
+    RequestLineParsingContext &parsingContext, HttpRequest &outRequest) {
   if (_isSpaceOrTab(parsingContext.chr)) {
     parsingContext.state = HttpRequestLineParsingState::SPACES_AFTER_URI;
     return StepResult::BREAK;
@@ -231,9 +229,9 @@ INLINE StepResult HttpParser::_parseUri(
   return StepResult::BREAK;
 }
 
-INLINE StepResult HttpParser::_parseHttpVersionMajor(
-    ParsingContext<HttpRequestLineParsingState> &parsingContext,
-    const std::string_view requestLine) {
+INLINE StepResult
+HttpParser::_parseHttpVersionMajor(RequestLineParsingContext &parsingContext,
+                                   const std::string_view requestLine) {
   if (parsingContext.chr == '.') {
     if (_isEndOfLine(parsingContext, requestLine)) {
       throw std::runtime_error("Dot cannot be last");
@@ -252,8 +250,8 @@ INLINE void HttpParser::_updateVersion(int &version, const char chr) {
   version = (version * 10) + (chr - '0');  // NOLINT
 }
 
-INLINE HttpVersion HttpParser::_getHttpVersion(
-    const ParsingContext<HttpRequestLineParsingState> &parsingContext) {
+INLINE HttpVersion
+HttpParser::_getHttpVersion(const RequestLineParsingContext &parsingContext) {
   if (parsingContext.major == 0 && parsingContext.minor == 9) {  // NOLINT
     return HttpVersion::HTTP_0_9;
   }
@@ -295,7 +293,7 @@ INLINE bool HttpParser::_isAsciiUppercase(const char chr) {
 }
 
 INLINE bool HttpParser::_isEndOfLine(
-    const ParsingContext<HttpRequestLineParsingState> &parsingContext,
+    const RequestLineParsingContext &parsingContext,
     const std::string_view requestLine) {
   return parsingContext.chrIdx == requestLine.size() - 1;
 }
@@ -308,69 +306,86 @@ enum class HttpHeadersParsingState : std::uint8_t {
   SPACES_AFTER_HEADER_VALUE,
 };
 
-// This code also is going to be refactored
-// TODO refactor
-void HttpParser::_parseHeaders(HttpRequest &outRequest) {
-  const auto [headersStart, headersEnd] = _getHeaders();
-
-  auto parsingState = HttpHeadersParsingState::HEADER_NAME;
-
+struct HeadersParsingContext {
+  HttpHeadersParsingState state{};
   std::string nameBuffer;
   std::string valueBuffer;
+  std::size_t chrIdx{};
+};
 
-  int i = headersStart;
-  for (; std::cmp_less(i, headersEnd); ++i) {
-    const char chr = _request[i];
-    switch (parsingState) {
-      case HttpHeadersParsingState::HEADER_NAME:
-        if (_isSpaceOrTab(chr)) {
-          throw std::runtime_error("spaces are not allowed in header name");
-        }
+void HttpParser::_parseHeaders(HttpRequest &outRequest) const {
+  const auto [headersStart, headersEnd] = _getHeaders();
 
-        if (chr == ':') {
-          parsingState = HttpHeadersParsingState::COLON;
-          break;
-        }
+  HeadersParsingContext parsingContext{
+      .state = HttpHeadersParsingState::HEADER_NAME,
+      .chrIdx = headersStart,
+  };
 
-        nameBuffer += std::tolower(static_cast<std::uint8_t>(chr));
-        break;
-      case HttpHeadersParsingState::COLON:
-        if (_isSpaceOrTab(chr)) {
-          parsingState = HttpHeadersParsingState::SPACES_AFTER_COLON;
-        } else {
-          parsingState = HttpHeadersParsingState::HEADER_VALUE;
-          goto header_value;
-        }
-      case HttpHeadersParsingState::SPACES_AFTER_COLON:
-        if (_isSpaceOrTab(chr)) {
-          break;
-        }
-      case HttpHeadersParsingState::HEADER_VALUE:
-      header_value:
-        if (_isSpaceOrTab(chr)) {
-          parsingState = HttpHeadersParsingState::SPACES_AFTER_HEADER_VALUE;
-          break;
-        }
-        if (chr == kCR) {
-          goto done;
-        }
-
-        valueBuffer += chr;
-        break;
-      case HttpHeadersParsingState::SPACES_AFTER_HEADER_VALUE:
-        if (_isSpaceOrTab(chr)) {
-          break;
-        }
-
-      done:
-        outRequest.headers[std::move(nameBuffer)] = std::move(valueBuffer);
-        ++i;
-        parsingState = HttpHeadersParsingState::HEADER_NAME;
-    }
+  for (; std::cmp_less(parsingContext.chrIdx, headersEnd);
+       ++parsingContext.chrIdx) {
+    _processHeaderChar(parsingContext, outRequest);
   }
 
-  if (!nameBuffer.empty() && !valueBuffer.empty()) {
-    outRequest.headers[std::move(nameBuffer)] = std::move(valueBuffer);
+  if (!parsingContext.nameBuffer.empty() &&
+      !parsingContext.valueBuffer.empty()) {
+    outRequest.headers[std::move(parsingContext.nameBuffer)] =
+        std::move(parsingContext.valueBuffer);
+  }
+}
+
+void HttpParser::_processHeaderChar(HeadersParsingContext &parsingContext,
+                                    HttpRequest &outRequest) const {
+  const char chr = _request.at(parsingContext.chrIdx);
+  switch (parsingContext.state) {
+    case HttpHeadersParsingState::HEADER_NAME:
+      if (_isSpaceOrTab(chr)) {
+        throw std::runtime_error("spaces are not allowed in header name");
+      }
+
+      if (chr == ':') {
+        parsingContext.state = HttpHeadersParsingState::COLON;
+        break;
+      }
+
+      parsingContext.nameBuffer +=
+          static_cast<char>(std::tolower(static_cast<std::uint8_t>(chr)));
+      break;
+    case HttpHeadersParsingState::COLON:
+      if (_isSpaceOrTab(chr)) {
+        parsingContext.state = HttpHeadersParsingState::SPACES_AFTER_COLON;
+      } else {
+        parsingContext.state = HttpHeadersParsingState::HEADER_VALUE;
+        goto header_value;
+      }
+    case HttpHeadersParsingState::SPACES_AFTER_COLON:
+      if (_isSpaceOrTab(chr)) {
+        break;
+      }
+    case HttpHeadersParsingState::HEADER_VALUE:
+    header_value:
+      if (_isSpaceOrTab(chr)) {
+        parsingContext.state =
+            HttpHeadersParsingState::SPACES_AFTER_HEADER_VALUE;
+        break;
+      }
+      if (chr == kCR) {
+        goto done;
+      }
+
+      parsingContext.valueBuffer += chr;
+      break;
+    case HttpHeadersParsingState::SPACES_AFTER_HEADER_VALUE:
+      if (_isSpaceOrTab(chr)) {
+        break;
+      }
+
+    done:
+      outRequest.headers[std::move(parsingContext.nameBuffer)] =
+          std::move(parsingContext.valueBuffer);
+      parsingContext.nameBuffer.clear();
+      parsingContext.valueBuffer.clear();
+      ++parsingContext.chrIdx;
+      parsingContext.state = HttpHeadersParsingState::HEADER_NAME;
   }
 }
 
