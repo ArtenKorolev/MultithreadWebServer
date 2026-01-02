@@ -45,7 +45,7 @@ Config::Config(const std::filesystem::path& configPath) {
   std::stringstream strStream;
   strStream << fileStream.rdbuf();
 
-  return strStream.str();
+  return std::optional<std::string>{std::in_place_t{}, strStream.str()};
 };
 
 }  // namespace webserver::config
