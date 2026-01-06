@@ -5,6 +5,7 @@
 #include <array>
 
 #include "HttpRequest.h"
+#include "ParsingUtils.cc"
 
 namespace webserver::http {
 
@@ -106,31 +107,31 @@ INLINE void HttpRequestLineParser::_processChar(HttpRequest &outRequest) {
         break;
       }
     case HttpRequestLineParsingState::SPACES_AFTER_URI:
-      if (_isSpaceOrTab(_context.chr)) {
+      if (utils::isSpaceOrTab(_context.chr)) {
         break;
       }
     case HttpRequestLineParsingState::HTTP_VERSION_H:
-      _expect(_context.chr, 'H');
+      utils::expect(_context.chr, 'H');
       _context.state = HttpRequestLineParsingState::HTTP_VERSION_HT;
       break;
     case HttpRequestLineParsingState::HTTP_VERSION_HT:
-      _expect(_context.chr, 'T');
+      utils::expect(_context.chr, 'T');
       _context.state = HttpRequestLineParsingState::HTTP_VERSION_HTT;
       break;
     case HttpRequestLineParsingState::HTTP_VERSION_HTT:
-      _expect(_context.chr, 'T');
+      utils::expect(_context.chr, 'T');
       _context.state = HttpRequestLineParsingState::HTTP_VERSION_HTTP;
       break;
     case HttpRequestLineParsingState::HTTP_VERSION_HTTP:
-      _expect(_context.chr, 'P');
+      utils::expect(_context.chr, 'P');
       _context.state = HttpRequestLineParsingState::HTTP_VERSION_SLASH;
       break;
     case HttpRequestLineParsingState::HTTP_VERSION_SLASH:
-      _expect(_context.chr, '/');
+      utils::expect(_context.chr, '/');
       _context.state = HttpRequestLineParsingState::HTTP_VERSION_MAJOR_START;
       break;
     case HttpRequestLineParsingState::HTTP_VERSION_MAJOR_START:
-      _expectDigit(_context.chr);
+      utils::expectDigit(_context.chr);
       _updateVersion(_context.major, _context.chr);
       _context.state = HttpRequestLineParsingState::HTTP_VERSION_MAJOR;
       break;
@@ -138,7 +139,7 @@ INLINE void HttpRequestLineParser::_processChar(HttpRequest &outRequest) {
       _parseHttpVersionMajor();
       break;
     case HttpRequestLineParsingState::HTTP_VERSION_DOT:
-      _expectDigit(_context.chr);
+      utils::expectDigit(_context.chr);
     case HttpRequestLineParsingState::HTTP_VERSION_MINOR:
       _updateVersion(_context.minor, _context.chr);
       _context.state = HttpRequestLineParsingState::END_OF_HTTP_VERSION;
@@ -150,7 +151,7 @@ INLINE void HttpRequestLineParser::_processChar(HttpRequest &outRequest) {
       _context.state = HttpRequestLineParsingState::SPACES_AFTER_VERSION;
       break;
     case HttpRequestLineParsingState::SPACES_AFTER_VERSION:
-      if (_isSpaceOrTab(_context.chr)) {
+      if (utils::isSpaceOrTab(_context.chr)) {
         break;
       }
 
@@ -163,14 +164,14 @@ INLINE StepResult HttpRequestLineParser::_parseMethod(HttpRequest &outRequest) {
     throw std::runtime_error("missing uri and version");
   }
 
-  if (_isSpaceOrTab(_context.chr)) {
+  if (utils::isSpaceOrTab(_context.chr)) {
     outRequest.method =
         getStrToMethodMap().at(_requestLine.substr(0, _context.methodEndIndex));
     _context.state = HttpRequestLineParsingState::SPACES_AFTER_METHOD;
     return StepResult::BREAK;
   }
 
-  if (!_isAsciiUppercase(_context.chr)) {
+  if (!utils::isAsciiUppercase(_context.chr)) {
     throw std::runtime_error(
         fmt::format("invalid character in method: '{}'", _context.chr));
   }
@@ -181,7 +182,7 @@ INLINE StepResult HttpRequestLineParser::_parseMethod(HttpRequest &outRequest) {
 }
 
 INLINE StepResult HttpRequestLineParser::_parseSpacesAfterMethod() {
-  if (_isSpaceOrTab(_context.chr)) {
+  if (utils::isSpaceOrTab(_context.chr)) {
     return StepResult::BREAK;
   }
 
@@ -190,7 +191,7 @@ INLINE StepResult HttpRequestLineParser::_parseSpacesAfterMethod() {
 }
 
 INLINE StepResult HttpRequestLineParser::_parseUri(HttpRequest &outRequest) {
-  if (_isSpaceOrTab(_context.chr)) {
+  if (utils::isSpaceOrTab(_context.chr)) {
     _context.state = HttpRequestLineParsingState::SPACES_AFTER_URI;
     return StepResult::BREAK;
   }
@@ -213,7 +214,7 @@ INLINE StepResult HttpRequestLineParser::_parseHttpVersionMajor() {
     return StepResult::BREAK;
   }
 
-  _expectDigit(_context.chr);
+  utils::expectDigit(_context.chr);
 
   _updateVersion(_context.major, _context.chr);
   return StepResult::BREAK;
@@ -242,28 +243,6 @@ INLINE HttpVersion HttpRequestLineParser::_getHttpVersion() const {
   }
 
   throw std::runtime_error("invalid HTTP version");
-}
-
-INLINE void HttpRequestLineParser::_expect(const char realChar,
-                                           const char expected) {
-  if (realChar != expected) {
-    throw std::runtime_error(
-        fmt::format("expected '{}' but got '{}'", expected, realChar));
-  }
-}
-
-INLINE void HttpRequestLineParser::_expectDigit(char chr) {
-  if (chr < '0' || chr > '9') {
-    throw std::runtime_error(fmt::format("expected digit but got '{}'", chr));
-  }
-}
-
-INLINE bool HttpRequestLineParser::_isSpaceOrTab(const char chr) {
-  return chr == ' ' || chr == '\t';
-}
-
-INLINE bool HttpRequestLineParser::_isAsciiUppercase(const char chr) {
-  return chr >= 'A' && chr <= 'Z';
 }
 
 INLINE bool HttpRequestLineParser::_isEndOfLine(

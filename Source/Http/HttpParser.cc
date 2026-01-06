@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "HttpRequestLineParser.h"
+#include "ParsingUtils.cc"
 
 namespace webserver::http {
 
@@ -25,7 +26,7 @@ HttpRequest HttpParser::parse() const {
   return result;
 }
 
-std::string_view HttpParser::_getRequestLine() const {
+INLINE std::string_view HttpParser::_getRequestLine() const {
   const std::size_t endOfRequestLine = _request.find(kCRLF);
 
   if (endOfRequestLine == std::string::npos) {
@@ -81,7 +82,7 @@ void HttpParser::_processHeaderChar(HeadersParsingContext &parsingContext,
   const char chr = _request.at(parsingContext.chrIdx);
   switch (parsingContext.state) {
     case HttpHeadersParsingState::HEADER_NAME:
-      if (_isSpaceOrTab(chr)) {
+      if (utils::isSpaceOrTab(chr)) {
         throw std::runtime_error("spaces are not allowed in header name");
       }
 
@@ -94,19 +95,19 @@ void HttpParser::_processHeaderChar(HeadersParsingContext &parsingContext,
           static_cast<char>(std::tolower(static_cast<std::uint8_t>(chr)));
       break;
     case HttpHeadersParsingState::COLON:
-      if (_isSpaceOrTab(chr)) {
+      if (utils::isSpaceOrTab(chr)) {
         parsingContext.state = HttpHeadersParsingState::SPACES_AFTER_COLON;
       } else {
         parsingContext.state = HttpHeadersParsingState::HEADER_VALUE;
         goto header_value;
       }
     case HttpHeadersParsingState::SPACES_AFTER_COLON:
-      if (_isSpaceOrTab(chr)) {
+      if (utils::isSpaceOrTab(chr)) {
         break;
       }
     case HttpHeadersParsingState::HEADER_VALUE:
     header_value:
-      if (_isSpaceOrTab(chr)) {
+      if (utils::isSpaceOrTab(chr)) {
         parsingContext.state =
             HttpHeadersParsingState::SPACES_AFTER_HEADER_VALUE;
         break;
@@ -118,7 +119,7 @@ void HttpParser::_processHeaderChar(HeadersParsingContext &parsingContext,
       parsingContext.valueBuffer += chr;
       break;
     case HttpHeadersParsingState::SPACES_AFTER_HEADER_VALUE:
-      if (_isSpaceOrTab(chr)) {
+      if (utils::isSpaceOrTab(chr)) {
         break;
       }
 
@@ -146,10 +147,6 @@ INLINE std::pair<std::size_t, std::size_t> HttpParser::_getHeaders() const {
   }
 
   return std::make_pair(start, end);
-}
-
-INLINE bool HttpParser::_isSpaceOrTab(const char chr) {
-  return chr == ' ' || chr == '\t';
 }
 
 void HttpParser::_parseBody(HttpRequest &outRequest) const {

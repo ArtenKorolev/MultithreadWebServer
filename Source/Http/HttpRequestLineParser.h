@@ -36,12 +36,6 @@ class HttpRequestLineParser {
   StepResult _parseUri(HttpRequest &outRequest);
   StepResult _parseHttpVersionMajor();
   [[nodiscard]] HttpVersion _getHttpVersion() const;
-
-  // Utils
-  static void _expect(char realChar, char expected);
-  static void _expectDigit(char chr);
-  static bool _isSpaceOrTab(char chr);
-  static bool _isAsciiUppercase(char chr);
   static bool _isEndOfLine(const RequestLineParsingContext &parsingContext,
                            std::string_view requestLine);
   static void _updateVersion(int &version, char chr);
