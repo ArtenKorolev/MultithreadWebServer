@@ -77,8 +77,8 @@ void HttpParser::_parseHeaders(HttpRequest &outRequest) const {
   }
 }
 
-void HttpParser::_processHeaderChar(HeadersParsingContext &parsingContext,
-                                    HttpRequest &outRequest) const {
+INLINE void HttpParser::_processHeaderChar(
+    HeadersParsingContext &parsingContext, HttpRequest &outRequest) const {
   const char chr = _request.at(parsingContext.chrIdx);
   switch (parsingContext.state) {
     case HttpHeadersParsingState::HEADER_NAME:
