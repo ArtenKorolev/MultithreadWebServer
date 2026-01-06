@@ -35,7 +35,7 @@ add_executable(${PROJECT_NAME} ${CPP_SOURCES})
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(${PROJECT_NAME} PRIVATE -g)
 elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_compile_options(${PROJECT_NAME} PRIVATE -O2 -Wall -fno-rtti)
+    target_compile_options(${PROJECT_NAME} PRIVATE -O2 -Wall -Wextra -Wpedantic -fno-rtti)
 endif ()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
