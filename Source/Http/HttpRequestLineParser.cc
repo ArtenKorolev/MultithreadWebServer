@@ -16,18 +16,18 @@ constexpr auto kUriTableSize = 256;
 static constexpr void fillUriTableWithAlphaCharacters(
     std::array<bool, kUriTableSize> &uriTable) {
   for (int chrCode = 'A'; chrCode <= 'Z'; ++chrCode) {
-    uriTable.at(chrCode) = true;
+    uriTable[chrCode] = true;
   }
 
   for (int chrCode = 'a'; chrCode <= 'z'; ++chrCode) {
-    uriTable.at(chrCode) = true;
+    uriTable[chrCode] = true;
   }
 }
 
 static constexpr void fillUriTableWithNumericCharacters(
     std::array<bool, kUriTableSize> &uriTable) {
   for (int chrCode = '0'; chrCode <= '9'; ++chrCode) {
-    uriTable.at(chrCode) = true;
+    uriTable[chrCode] = true;
   }
 }
 
@@ -37,8 +37,8 @@ static constexpr void fillUriTableWithSpecialCharacters(
                                              '\'', '(', ')', '*', '+', ',', ';',
                                              '=',  ':', '@', '/', '?'};
 
-  for (char specialChr : specials) {
-    uriTable.at(specialChr) = true;
+  for (const char specialChr : specials) {
+    uriTable[specialChr] = true;
   }
 }
 
@@ -82,8 +82,10 @@ void HttpRequestLineParser::parse(HttpRequest &outRequest) {
       .state = HttpRequestLineParsingState::METHOD,
   };
 
+  outRequest.uri.reserve(128);
+
   for (; _context.chrIdx < _requestLine.size(); ++_context.chrIdx) {
-    _context.chr = _requestLine.at(_context.chrIdx);
+    _context.chr = _requestLine[_context.chrIdx];
     _processChar(outRequest);
   }
 
@@ -196,7 +198,7 @@ INLINE StepResult HttpRequestLineParser::_parseUri(HttpRequest &outRequest) {
     return StepResult::BREAK;
   }
 
-  if (!uriSymbolsTable.at(_context.chr)) {
+  if (!uriSymbolsTable[_context.chr]) {
     throw std::runtime_error("invalid character in uri");
   }
 

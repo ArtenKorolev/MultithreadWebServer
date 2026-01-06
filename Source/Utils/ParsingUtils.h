@@ -2,9 +2,9 @@
 
 namespace webserver::utils {
 
-void expect(char realChar, char expected);
-void expectDigit(char chr);
-bool isSpaceOrTab(char chr);
-bool isAsciiUppercase(char chr);
+static void expect(char realChar, char expected);
+static void expectDigit(char chr);
+static bool isSpaceOrTab(char chr);
+static bool isAsciiUppercase(char chr);
 
 }  // namespace webserver::utils
