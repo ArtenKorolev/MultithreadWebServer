@@ -73,6 +73,8 @@ enum class HttpRequestLineParsingState : std::uint8_t {
   SPACES_AFTER_VERSION,
 };
 
+enum class StepResult : std::uint8_t { CONTINUE, BREAK };
+
 HttpRequestLineParser::HttpRequestLineParser(const std::string_view requestLine)
     : _requestLine(requestLine) {
 }
@@ -82,7 +84,9 @@ void HttpRequestLineParser::parse(HttpRequest &outRequest) {
       .state = HttpRequestLineParsingState::METHOD,
   };
 
-  outRequest.uri.reserve(128);
+  constexpr auto kPreallocationSize = 128;
+
+  outRequest.uri.reserve(kPreallocationSize);
 
   for (; _context.chrIdx < _requestLine.size(); ++_context.chrIdx) {
     _context.chr = _requestLine[_context.chrIdx];
@@ -91,8 +95,6 @@ void HttpRequestLineParser::parse(HttpRequest &outRequest) {
 
   outRequest.httpVersion = _getHttpVersion();
 }
-
-enum class StepResult : std::uint8_t { CONTINUE, BREAK };
 
 INLINE void HttpRequestLineParser::_processChar(HttpRequest &outRequest) {
   switch (_context.state) {
