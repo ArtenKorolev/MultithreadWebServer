@@ -1,7 +1,6 @@
 #pragma once
 
 #include <filesystem>
-#include <optional>
 
 #include "Utils.h"
 
@@ -18,10 +17,6 @@ class Config {
   std::uint16_t port{kDefaultPort};
   int threadsCount{kDefaultThreadsCount};
   std::string contentDirectory{kDefaultContentDirectory};
-
- private:
-  [[nodiscard]] static std::optional<std::string> _readFile(
-      const std::filesystem::path& path);
 };
 
 }  // namespace webserver::config

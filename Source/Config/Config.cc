@@ -1,15 +1,14 @@
 #include "Config.h"
 
 #include <filesystem>
-#include <fstream>
-#include <sstream>
 
+#include "FileSystemUtils.h"
 #include "IniParser.h"
 
 namespace webserver::config {
 
 Config::Config(const std::filesystem::path& configPath) {
-  auto configContents{_readFile(configPath)};
+  auto configContents{utils::readFile(configPath)};
 
   if (!configContents.has_value()) {
     return;
@@ -32,20 +31,6 @@ Config::Config(const std::filesystem::path& configPath) {
   if (configMap.contains(kContentDirectoryKey)) {
     contentDirectory = configMap.at(kContentDirectoryKey);
   }
-};
-
-[[nodiscard]] std::optional<std::string> Config::_readFile(
-    const std::filesystem::path& path) {
-  std::ifstream fileStream{path};
-
-  if (!fileStream.is_open()) {
-    return std::nullopt;
-  }
-
-  std::stringstream strStream;
-  strStream << fileStream.rdbuf();
-
-  return std::optional<std::string>{std::in_place_t{}, strStream.str()};
 };
 
 }  // namespace webserver::config
