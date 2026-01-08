@@ -1,4 +1,4 @@
-#include "SignalsManager.h"
+#include "EventsManager.h"
 
 #include <unistd.h>
 
@@ -8,14 +8,14 @@
 
 namespace webserver::core {
 
-void SignalsManager::enableAllSignalsHandlers() {
+void EventsManager::enableEventsHandlers() {
 #ifndef _POSIX_VERSION
-  #error "Unsupported platform for signals"
+#error "Unsupported platform for events handling"
 #endif
-  _enableSigIntHandler();
+  _enableShutdownHandler();
 }
 
-void SignalsManager::_enableSigIntHandler() {
+void EventsManager::_enableShutdownHandler() {
   struct sigaction signalData = {};
   signalData.sa_flags = 0;
 

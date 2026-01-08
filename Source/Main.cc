@@ -1,13 +1,13 @@
 #include <print>
 
 #include "Config.h"
+#include "EventsManager.h"
 #include "HttpServer.h"
-#include "SignalsManager.h"
 
 int main() {
   using namespace webserver;
 
-  core::SignalsManager::enableAllSignalsHandlers();
+  core::EventsManager::enableEventsHandlers();
 
   try {
     constexpr auto kDefaultConfigFile{"config.ini"};
