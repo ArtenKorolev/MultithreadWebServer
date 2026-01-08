@@ -10,7 +10,7 @@ namespace webserver::core {
 
 void EventsManager::enableEventsHandlers() {
 #ifndef _POSIX_VERSION
-#error "Unsupported platform for events handling"
+#  error "Unsupported platform for events handling"
 #endif
   _enableShutdownHandler();
 }
