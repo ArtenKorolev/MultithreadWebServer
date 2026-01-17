@@ -6,8 +6,6 @@
 
 namespace webserver::http {
 
-struct HeadersParsingContext;
-
 class HttpParser {
  public:
   explicit HttpParser(std::string request) noexcept
@@ -18,10 +16,7 @@ class HttpParser {
 
  private:
   [[nodiscard]] std::string_view _getRequestLine() const;
-  [[nodiscard]] std::pair<std::size_t, std::size_t> _getHeaders() const;
-  void _parseHeaders(HttpRequest &outRequest) const;
-  void _processHeaderChar(HeadersParsingContext &parsingContext,
-                          HttpRequest &outRequest) const;
+  [[nodiscard]] std::string_view _getHeaders() const;
   void _parseBody(HttpRequest &outRequest) const;
 
   const std::string _request;
