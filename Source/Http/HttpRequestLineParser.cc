@@ -75,6 +75,8 @@ enum class HttpRequestLineParsingState : std::uint8_t {
 
 enum class StepResult : std::uint8_t { CONTINUE, BREAK };
 
+constexpr auto kPreallocationSize = 128;
+
 HttpRequestLineParser::HttpRequestLineParser(const std::string_view requestLine)
     : _requestLine(requestLine) {
 }
@@ -83,8 +85,6 @@ void HttpRequestLineParser::parse(HttpRequest &outRequest) {
   _context = {
       .state = HttpRequestLineParsingState::METHOD,
   };
-
-  constexpr auto kPreallocationSize = 128;
 
   outRequest.uri.reserve(kPreallocationSize);
 
@@ -102,18 +102,26 @@ INLINE void HttpRequestLineParser::_processChar(HttpRequest &outRequest) {
       if (_parseMethod(outRequest) == StepResult::BREAK) {
         break;
       }
+
+      [[fallthrough]];
     case HttpRequestLineParsingState::SPACES_AFTER_METHOD:
       if (_parseSpacesAfterMethod() == StepResult::BREAK) {
         break;
       }
+
+      [[fallthrough]];
     case HttpRequestLineParsingState::URI:
       if (_parseUri(outRequest) == StepResult::BREAK) {
         break;
       }
+
+      [[fallthrough]];
     case HttpRequestLineParsingState::SPACES_AFTER_URI:
       if (utils::isSpaceOrTab(_context.chr)) {
         break;
       }
+
+      [[fallthrough]];
     case HttpRequestLineParsingState::HTTP_VERSION_H:
       utils::expect(_context.chr, 'H');
       _context.state = HttpRequestLineParsingState::HTTP_VERSION_HT;

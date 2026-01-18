@@ -43,6 +43,7 @@ INLINE std::string_view HttpParser::_getRequestLine() const {
 
 INLINE std::string_view HttpParser::_getHeaders() const {
   auto start = _request.find(kCRLF);
+
   if (start == std::string::npos) {
     throw std::runtime_error("Malformed HTTP request: missing CRLF");
   }
@@ -50,13 +51,12 @@ INLINE std::string_view HttpParser::_getHeaders() const {
   start += kCRLF.size();
 
   auto end = _request.find(kDoubleCRLF, start);
+
   if (end == std::string::npos) {
     throw std::runtime_error(R"(Malformed HTTP request: missing \r\n\r\n)");
   }
 
-  const std::string_view headers{_request.data() + start, end - start};
-
-  return headers;
+  return {_request.data() + start, end - start};
 }
 
 void HttpParser::_parseBody(HttpRequest &outRequest) const {
