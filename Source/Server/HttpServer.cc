@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 
+#include "Config.h"
 #include "HttpResponse.h"
 #include "SocketFactory.h"
 #include "StaticFileHandler.h"

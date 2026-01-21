@@ -10,6 +10,7 @@
 
 #ifdef __linux__
   #include <sys/sendfile.h>
+  #include <cstring>
 #endif
 
 #include <unistd.h>
