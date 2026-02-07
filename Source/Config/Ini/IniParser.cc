@@ -1,5 +1,6 @@
 #include "IniParser.h"
 
+#include <stdexcept>
 #include <unordered_map>
 
 #include "Utils.h"

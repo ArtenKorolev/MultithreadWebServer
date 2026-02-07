@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "ParsingUtils.h"
+#include <stdexcept>
 
 namespace webserver::http {
 
