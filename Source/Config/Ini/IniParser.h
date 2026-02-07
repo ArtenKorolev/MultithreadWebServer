@@ -23,6 +23,8 @@ class IniParser {
  private:
   [[nodiscard]] std::size_t _calculateLineEnd(std::size_t lineStart);
   void _parseLine(const std::string &line);
+  [[nodiscard]] static bool _isComment(const std::string &line);
+  [[nodiscard]] static bool _isStartOfSection(const std::string &line);
   void _parseSection(const std::string &line);
   static void _throwIfEndOfSectionIsInvalid(std::size_t endOfSection,
                                             const std::string &line);

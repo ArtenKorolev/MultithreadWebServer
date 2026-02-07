@@ -42,16 +42,24 @@ void IniParser::_parseLine(const std::string &line) {
     return;  // skip empty lines
   }
 
-  if (line.at(0) == ';' || line.at(0) == '#') {
+  if (_isComment(line)) {
     return;  // skip comments
   }
 
-  if (line.at(0) == '[') {
+  if (_isStartOfSection(line)) {
     _parseSection(line);
     return;
   }
 
   _parseKeyValuePair(line);
+}
+
+bool IniParser::_isComment(const std::string &line) {
+  return line.at(0) == ';' || line.at(0) == '#';
+}
+
+bool IniParser::_isStartOfSection(const std::string &line) {
+  return line.at(0) == '[';
 }
 
 void IniParser::_parseSection(const std::string &line) {
@@ -80,7 +88,9 @@ void IniParser::_throwIfEndOfSectionIsInvalid(const std::size_t endOfSection,
     throw std::runtime_error("missing ']' in section declaration");
   }
 
-  if (endOfSection != line.size() - 1) {
+  const auto lastCharPosition = line.size() - 1;
+
+  if (endOfSection != lastCharPosition) {
     throw std::runtime_error("unexpected symbols after ']'");
   }
 }
