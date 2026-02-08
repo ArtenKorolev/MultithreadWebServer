@@ -17,6 +17,8 @@ class StaticFileHandler {
       net::ISocket &clientSocket) const;
 
  private:
+  [[nodiscard]] static std::expected<void, HttpError> _validateUri(
+      const std::filesystem::path &path);
   [[nodiscard]] std::filesystem::path _getFullPath(
       const std::string &uri) const;
   [[nodiscard]] static bool _containsTwoDotsPattern(const std::string &uri);

@@ -28,10 +28,14 @@ UmapStrStr IniParser::parse() {
   return _parsingContext.configMap;
 }
 
+[[clang::always_inline]] inline bool notFound(const std::size_t position) {
+  return position == std::string::npos;
+}
+
 inline std::size_t IniParser::_calculateLineEnd(const std::size_t lineStart) {
   auto lineEnd{_input.find('\n', lineStart)};
 
-  if (lineEnd == std::string_view::npos) {
+  if (notFound(lineEnd)) {
     lineEnd = _input.size();
   }
 
@@ -104,7 +108,7 @@ void IniParser::_parseKeyValuePair(const std::string &line) {
   for (const char chr : line) {
     if (chr == '=') {
       if (eqSignMet) {
-        throw std::runtime_error("double '=' in .ini file");
+        throw std::runtime_error("'=' met two times");
       }
 
       if (key.empty()) {

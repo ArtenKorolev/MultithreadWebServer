@@ -2,7 +2,6 @@
 
 #include <expected>
 
-#include "Config.h"
 #include "HttpBase.h"
 #include "HttpParser.h"
 #include "HttpResponse.h"
@@ -21,16 +20,10 @@ StaticFileHandler::StaticFileHandler(const std::string& contentDirectory)
 
   const auto fullPath{_getFullPath(request.uri)};
 
-  if (_containsTwoDotsPattern(fullPath)) {
-    return std::unexpected<HttpError>{
-        {.statusCode = StatusCode::HTTP_400_BAD_REQUEST,
-         .message = "Preventing traversal path: '..' found in URI"}};
-  }
+  const auto validationResult = _validateUri(fullPath);
 
-  if (!std::filesystem::exists(fullPath) ||
-      !std::filesystem::is_regular_file(fullPath)) {
-    return std::unexpected<HttpError>{
-        {.statusCode = StatusCode::HTTP_404_NOT_FOUND}};
+  if (!validationResult.has_value()) {
+    return validationResult;
   }
 
   const auto response = HttpResponse{
@@ -42,6 +35,23 @@ StaticFileHandler::StaticFileHandler(const std::string& contentDirectory)
 
   clientSocket.send(response.serialize());
   clientSocket.sendZeroCopyFile(fullPath);
+
+  return {};
+}
+
+std::expected<void, HttpError> StaticFileHandler::_validateUri(
+    const std::filesystem::path& path) {
+  if (_containsTwoDotsPattern(path)) {
+    return std::unexpected<HttpError>{
+        {.statusCode = StatusCode::HTTP_400_BAD_REQUEST,
+         .message = "Preventing traversal path: '..' found in URI"}};
+  }
+
+  if (!std::filesystem::exists(path) ||
+      !std::filesystem::is_regular_file(path)) {
+    return std::unexpected<HttpError>{
+        {.statusCode = StatusCode::HTTP_404_NOT_FOUND}};
+  }
 
   return {};
 }
