@@ -1,5 +1,6 @@
 #include "HttpServer.h"
 
+#include <print>
 #include <stdexcept>
 
 #include "Config.h"
@@ -30,6 +31,9 @@ void HttpServer::_throwIfPortIsInvalid() const {
 void HttpServer::startServerLoop() {
   shutdownRequested.store(false);
   _serverSocket->listen();
+
+  std::println("Listening on localhost:{}", _config.port);
+  std::println("Content directory: {}/", _config.contentDirectory);
 
   while (!shutdownRequested.load()) {
     try {

@@ -28,7 +28,7 @@ UmapStrStr IniParser::parse() {
   return _parsingContext.configMap;
 }
 
-[[clang::always_inline]] inline bool notFound(const std::size_t position) {
+inline bool notFound(const std::size_t position) {
   return position == std::string::npos;
 }
 
