@@ -1,19 +1,17 @@
 #include "StaticFileHandler.h"
 
-#include <expected>
-
-#include "HttpBase.h"
+#include "Handler.h"
 #include "HttpParser.h"
-#include "HttpResponse.h"
+#include "IniParser.h"
 #include "Socket.h"
 
 namespace webserver::http {
 
-StaticFileHandler::StaticFileHandler(const std::string& contentDirectory)
-    : _contentDirectory{contentDirectory} {
+StaticFileHandler::StaticFileHandler(std::string contentDirectory)
+    : _contentDirectory{std::move(contentDirectory)} {
 }
 
-[[nodiscard]] std::expected<void, HttpError> StaticFileHandler::handle(
+[[nodiscard]] net::HandlingResult StaticFileHandler::handle(
     net::ISocket& clientSocket) const {
   const auto requestRaw{clientSocket.receive()};
   const auto request{HttpParser{requestRaw}.parse()};
@@ -39,7 +37,7 @@ StaticFileHandler::StaticFileHandler(const std::string& contentDirectory)
   return {};
 }
 
-std::expected<void, HttpError> StaticFileHandler::_validateUri(
+net::HandlingResult StaticFileHandler::_validateUri(
     const std::filesystem::path& path) {
   if (_containsTwoDotsPattern(path)) {
     return std::unexpected<HttpError>{
@@ -73,19 +71,19 @@ inline bool StaticFileHandler::_containsTwoDotsPattern(const std::string& uri) {
 
 std::string StaticFileHandler::_getMimeTypeByFileName(
     const std::filesystem::path& fileName) {
-  static const std::unordered_map<std::string, std::string>
-      extensionToMimeType = {{".html", "text/html"},
-                             {".css", "text/css"},
-                             {".js", "application/javascript"},
-                             {".png", "image/png"},
-                             {".jpg", "image/jpeg"},
-                             {".jpeg", "image/jpeg"},
-                             {".gif", "image/gif"},
-                             {".svg", "image/svg+xml"},
-                             {".json", "application/json"},
-                             {".php", "application/x-php"},
-                             {".txt", "text/plain"},
-                             {".wasm", "application/wasm"}};
+  static const core::UmapStrStr extensionToMimeType = {
+      {".html", "text/html"},
+      {".css", "text/css"},
+      {".js", "application/javascript"},
+      {".png", "image/png"},
+      {".jpg", "image/jpeg"},
+      {".jpeg", "image/jpeg"},
+      {".gif", "image/gif"},
+      {".svg", "image/svg+xml"},
+      {".json", "application/json"},
+      {".php", "application/x-php"},
+      {".txt", "text/plain"},
+      {".wasm", "application/wasm"}};
 
   return extensionToMimeType.at(fileName.extension());
 }

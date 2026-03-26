@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "Config.h"
+#include "Handler.h"
 #include "Socket.h"
 #include "ThreadPool.h"
 
@@ -14,7 +15,7 @@ constexpr auto kDefaultPort = 8000;
 
 class HttpServer {
  public:
-  explicit HttpServer(config::Config config);
+  explicit HttpServer(config::Config config, const IHandler &handler);
 
   HttpServer(const HttpServer &) = delete;
   HttpServer(HttpServer &&) = delete;
@@ -31,6 +32,7 @@ class HttpServer {
   const config::Config _config;
   core::ThreadPool _threadPool;
   std::unique_ptr<ISocket> _serverSocket;
+  const IHandler &_handler;
 };
 
 }  // namespace webserver::net

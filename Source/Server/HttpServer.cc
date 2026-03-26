@@ -1,9 +1,11 @@
 #include "HttpServer.h"
 
+#include <iostream>
 #include <print>
 #include <stdexcept>
 
 #include "Config.h"
+#include "Handler.h"
 #include "HttpResponse.h"
 #include "SocketFactory.h"
 #include "StaticFileHandler.h"
@@ -15,8 +17,10 @@ constexpr auto kMaxPort{65535};
 
 using namespace http;
 
-HttpServer::HttpServer(config::Config config)
-    : _config{std::move(config)}, _threadPool{_config.threadsCount} {
+HttpServer::HttpServer(config::Config config, const IHandler &handler)
+    : _config{std::move(config)},
+      _threadPool{_config.threadsCount},
+      _handler{handler} {
   _throwIfPortIsInvalid();
   _serverSocket = SocketFactory::newSocket();
   _serverSocket->bind(_config.port);
@@ -60,10 +64,13 @@ void HttpServer::startServerLoop() {
 }
 
 void HttpServer::_serveClient(std::unique_ptr<ISocket> clientSocket) const {
-  const StaticFileHandler handler{_config.contentDirectory};
-  const auto handleResult = handler.handle(*clientSocket);
+  const auto handleResult = _handler.handle(*clientSocket);
 
   if (!handleResult.has_value()) {
+    std::println("Handling error, message: {}, status code: {}",
+                 handleResult.error().message.value_or("null"),
+                 static_cast<int>(handleResult.error().statusCode));
+
     const auto response{HttpResponse::fromError(handleResult.error())};
     clientSocket->send(response.serialize());
   }

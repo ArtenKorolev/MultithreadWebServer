@@ -3,18 +3,18 @@
 #include <expected>
 #include <filesystem>
 
-#include "HttpBase.h"
+#include "Handler.h"
 #include "HttpResponse.h"
 #include "Socket.h"
 
 namespace webserver::http {
 
-class StaticFileHandler {
+class StaticFileHandler : public net::IHandler {
  public:
-  explicit StaticFileHandler(const std::string &contentDirectory);
+  explicit StaticFileHandler(std::string contentDirectory);
 
-  [[nodiscard]] std::expected<void, HttpError> handle(
-      net::ISocket &clientSocket) const;
+  [[nodiscard]] net::HandlingResult handle(
+      net::ISocket &clientSocket) const override;
 
  private:
   [[nodiscard]] static std::expected<void, HttpError> _validateUri(
@@ -25,7 +25,7 @@ class StaticFileHandler {
   [[nodiscard]] static std::string _getMimeTypeByFileName(
       const std::filesystem::path &fileName);
 
-  const std::string &_contentDirectory;
+  std::string _contentDirectory;
 };
 
 }  // namespace webserver::http

@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "EventsManager.h"
 #include "HttpServer.h"
+#include "StaticFileHandler.h"
 
 int main() {
   using namespace webserver;
@@ -12,7 +13,8 @@ int main() {
   try {
     constexpr auto kDefaultConfigFile{"config.ini"};
     config::Config serverConfig{kDefaultConfigFile};
-    net::HttpServer server{std::move(serverConfig)};
+    const http::StaticFileHandler handler{serverConfig.contentDirectory};
+    net::HttpServer server{std::move(serverConfig), handler};
     server.startServerLoop();
   } catch (const std::exception &e) {
     std::println("Error: {}", e.what());
