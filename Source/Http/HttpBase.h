@@ -1,7 +1,7 @@
 #pragma once
 
 // necessary on linux
-#include <cstdint> // NOLINT
+#include <cstdint>  // NOLINT
 #include <string>
 #include <unordered_map>
 
@@ -105,5 +105,7 @@ enum class HttpVersion : std::uint8_t {
   HTTP_2,        // HTTP/2
   HTTP_3,        // HTTP/3
 };
+
+// inline const HttpVersion kServerHttpVersion = HttpVersion::HTTP_1_1;
 
 }  // namespace webserver::http

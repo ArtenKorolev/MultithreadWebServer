@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <sys/_types/_timeval.h>
 #include <sys/fcntl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -34,10 +35,26 @@ UnixSocket::UnixSocket() {
     throw std::runtime_error("Unable to initialize socket");
   }
 
-  constexpr auto enable = 1;
-  setsockopt(fileDescriptor, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+  _setReuseAddressSocketOption(fileDescriptor);
+  _setTimeoutForSocket(fileDescriptor);
 
   _socketFd = fileDescriptor;
+}
+
+inline void UnixSocket::_setReuseAddressSocketOption(const int fileDes) {
+  constexpr int enable = 1;
+  setsockopt(fileDes, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+}
+
+inline void UnixSocket::_setTimeoutForSocket(const int fileDes) {
+  constexpr auto kDefaultSocketTimeoutSec = 5;
+
+  timeval time{};
+  time.tv_sec = kDefaultSocketTimeoutSec;
+  time.tv_usec = 0;
+
+  setsockopt(fileDes, SOL_SOCKET, SO_RCVTIMEO, &time, sizeof(time));
+  setsockopt(fileDes, SOL_SOCKET, SO_SNDTIMEO, &time, sizeof(time));
 }
 
 UnixSocket::UnixSocket(const int fileDescriptor) {
@@ -64,8 +81,8 @@ void UnixSocket::close() {
   }
 }
 
-void UnixSocket::connect(const HostData &hostData) {
-  auto *addressInfo{_resolveHostDataToAddressInfo(hostData)};
+void UnixSocket::connect(const HostData& hostData) {
+  auto* addressInfo{_resolveHostDataToAddressInfo(hostData)};
 
   const auto connectResult{
       ::connect(_socketFd, addressInfo->ai_addr, addressInfo->ai_addrlen)};
@@ -77,9 +94,9 @@ void UnixSocket::connect(const HostData &hostData) {
   }
 }
 
-struct addrinfo *UnixSocket::_resolveHostDataToAddressInfo(
-    const HostData &hostData) {
-  struct addrinfo *server = nullptr;
+struct addrinfo* UnixSocket::_resolveHostDataToAddressInfo(
+    const HostData& hostData) {
+  struct addrinfo* server = nullptr;
   struct addrinfo hints{};
 
   memset(&hints, 0, sizeof(hints));
@@ -103,9 +120,9 @@ struct addrinfo *UnixSocket::_resolveHostDataToAddressInfo(
 void UnixSocket::bind(const std::uint16_t port) {
   auto address{_buildLocalAddressByPort(port)};
 
-  const auto bindResult{::bind(
-      _socketFd, reinterpret_cast<struct sockaddr *>(&address),  // NOLINT
-      sizeof(address))};
+  const auto bindResult{
+      ::bind(_socketFd, reinterpret_cast<struct sockaddr*>(&address),  // NOLINT
+             sizeof(address))};
 
   if (bindResult < 0) {
     throw std::runtime_error("Unable to bind socket");
@@ -137,7 +154,7 @@ void UnixSocket::listen() {
   }
 }
 
-void UnixSocket::send(const std::string &data) {
+void UnixSocket::send(const std::string& data) {
   if (const auto bytesSent{::send(_socketFd, data.data(), data.size(), 0)};
       bytesSent != data.size()) {
     throw std::runtime_error("Bytes sent don't match data size");

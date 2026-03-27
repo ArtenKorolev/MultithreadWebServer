@@ -1,6 +1,5 @@
 #include "HttpServer.h"
 
-#include <iostream>
 #include <print>
 #include <stdexcept>
 
@@ -8,7 +7,6 @@
 #include "Handler.h"
 #include "HttpResponse.h"
 #include "SocketFactory.h"
-#include "StaticFileHandler.h"
 
 namespace webserver::net {
 
@@ -17,7 +15,7 @@ constexpr auto kMaxPort{65535};
 
 using namespace http;
 
-HttpServer::HttpServer(config::Config config, const IHandler &handler)
+HttpServer::HttpServer(config::Config config, const IHandler& handler)
     : _config{std::move(config)},
       _threadPool{_config.threadsCount},
       _handler{handler} {
@@ -50,7 +48,7 @@ void HttpServer::startServerLoop() {
       _threadPool.enqueue([client = std::move(clientSocket), this]() mutable {
         _serveClient(std::move(client));
       });
-    } catch (const std::exception &e) {
+    } catch (const std::exception& e) {
       if (shutdownRequested.load()) {
         break;
       }
@@ -64,15 +62,25 @@ void HttpServer::startServerLoop() {
 }
 
 void HttpServer::_serveClient(std::unique_ptr<ISocket> clientSocket) const {
-  const auto handleResult = _handler.handle(*clientSocket);
+  while (true) {
+    const auto handleResult = _handler.handle(*clientSocket);
 
-  if (!handleResult.has_value()) {
-    std::println("Handling error, message: {}, status code: {}",
-                 handleResult.error().message.value_or("null"),
-                 static_cast<int>(handleResult.error().statusCode));
+    if (!handleResult.has_value()) {
+      std::println("Handling error, message: {}, status code: {}",
+                   handleResult.error().message.value_or("null"),
+                   static_cast<int>(handleResult.error().statusCode));
 
-    const auto response{HttpResponse::fromError(handleResult.error())};
-    clientSocket->send(response.serialize());
+      const auto response{HttpResponse::fromError(handleResult.error())};
+      clientSocket->send(response.serialize());
+      break;
+    }
+
+    switch (handleResult.value()) {
+      case ConnType::CLOSE:
+        return;  // close connection
+      default:
+        break;
+    }
   }
 }
 

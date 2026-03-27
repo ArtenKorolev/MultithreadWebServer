@@ -1,6 +1,7 @@
 #include "StaticFileHandler.h"
 
 #include "Handler.h"
+#include "HttpBase.h"
 #include "HttpParser.h"
 #include "IniParser.h"
 #include "Socket.h"
@@ -16,12 +17,23 @@ StaticFileHandler::StaticFileHandler(std::string contentDirectory)
   const auto requestRaw{clientSocket.receive()};
   const auto request{HttpParser{requestRaw}.parse()};
 
+  net::ConnType connType = net::ConnType::CLOSE;
+
+  if (request.headers.contains("Connection")) {
+    connType = request.headers.at("Connection") == "close"
+                   ? net::ConnType::CLOSE
+                   : net::ConnType::KEEP_ALIVE;
+  } else if (request.httpVersion >= HttpVersion::HTTP_1_1) {
+    connType = net::ConnType::KEEP_ALIVE;  // In HTTP versions >= 1.1
+                                           // Conneciton: keep-alive is implied
+  }
+
   const auto fullPath{_getFullPath(request.uri)};
 
   const auto validationResult = _validateUri(fullPath);
 
   if (!validationResult.has_value()) {
-    return validationResult;
+    return std::unexpected<HttpError>(validationResult.error());
   }
 
   const auto response = HttpResponse{
@@ -29,15 +41,16 @@ StaticFileHandler::StaticFileHandler(std::string contentDirectory)
       .headers = {{"Content-Type", _getMimeTypeByFileName(fullPath)},
                   {"Content-Length",
                    std::to_string(std::filesystem::file_size(fullPath))},
-                  {"Connection", "close"}}};
+                  {"Connection",
+                   connType == net::ConnType::CLOSE ? "close" : "keep-alive"}}};
 
   clientSocket.send(response.serialize());
   clientSocket.sendZeroCopyFile(fullPath);
 
-  return {};
+  return connType;
 }
 
-net::HandlingResult StaticFileHandler::_validateUri(
+std::expected<void, HttpError> StaticFileHandler::_validateUri(
     const std::filesystem::path& path) {
   if (_containsTwoDotsPattern(path)) {
     return std::unexpected<HttpError>{
